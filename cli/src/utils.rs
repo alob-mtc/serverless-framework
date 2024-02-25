@@ -72,7 +72,7 @@ pub fn create_fn_files(name: &str, _runtime: &str) -> std::io::Result<Vec<File>>
 }
 
 fn create_config_file(name: &str, runtime: &str) -> std::io::Result<()> {
-    let mut config_file = File::create("config.json")?;
+    let mut config_file = File::create("../../config.json")?;
     let config = Config {
         function_name: name.to_string(),
         runtime: runtime.to_string(),

@@ -40,7 +40,7 @@ TODO: archive the function and send to a remote server
 build the docker image
 */
 pub fn deploy_function() {
-    let mut config_file = File::open("config.json").unwrap();
+    let mut config_file = File::open("../../config.json").unwrap();
     let mut contents = String::new();
     config_file.read_to_string(&mut contents).unwrap();
     let config: Config = serde_json::from_str(&contents).unwrap();
