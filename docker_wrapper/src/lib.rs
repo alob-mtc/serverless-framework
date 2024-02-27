@@ -1,26 +1,24 @@
-use super::*;
+mod error;
+mod utils;
 
 use error::{AppResult, Error as AppError};
+use std::io::Write;
 use std::{
-    process::{Child, Command},
+    process::{Child, Command, Stdio},
     sync::mpsc,
     time::{Duration, Instant},
 };
+use std::fs::File;
 use utils::{print_output, timeout};
 use uuid::Uuid;
 
-static RUNNER: &str = "code-runner";
 static PROGRAM: &str = "docker";
 static TIMEOUT: u64 = 3;
 
-pub fn runner(runner_type: &str, code_snippet: &str, timeout_val: u64) {
-    let runner_type = if !runner_type.is_empty() {
-        runner_type
-    } else {
-        RUNNER
-    };
+pub fn runner(runner_type: &str, dockerfile_content: &str, code_snippet: &str, timeout_val: u64) {
+    println!("runner_type: {}", runner_type);
     // provision env
-    if let Err(e) = provisioning(runner_type) {
+    if let Err(e) = provisioning(runner_type, dockerfile_content) {
         eprintln!("Failed to provision code-runner env: {e}");
         return;
     }
@@ -87,7 +85,7 @@ fn monitor_child_process(child: &mut Child, timeout_rx: mpsc::Receiver<()>) -> A
 }
 
 fn try_wait(child: &mut Child, timeout_killer: bool) -> AppResult<bool> {
-    match child
+    return match child
         .try_wait()
         .map_err(|e| -> AppError { AppError::System(format!("Error attempting to wait: {e}")) })?
     {
@@ -97,19 +95,19 @@ fn try_wait(child: &mut Child, timeout_killer: bool) -> AppResult<bool> {
                     "Process exits with status: {status}"
                 )));
             }
-            return Ok(true);
+            Ok(true)
         }
         None => {
-            // if child process not don and it's a timeout, kill the child process
+            // if child process not done, and it's a timeout, kill the child process
             if timeout_killer {
                 child.kill().map_err(|e| -> AppError {
                     AppError::System(format!("Error while trying to kill child process {e}"))
                 })?;
                 return Err(AppError::Exec("Process timed out".to_string()));
             }
-            return Ok(false);
+            Ok(false)
         }
-    }
+    };
 }
 
 fn clean_up(container_name: String) -> AppResult<()> {
@@ -126,7 +124,7 @@ fn clean_up(container_name: String) -> AppResult<()> {
         )
 }
 
-fn provisioning(runner_type: &str) -> AppResult<()> {
+pub fn provisioning(runner_type: &str, dockerfile_content: &str) -> AppResult<()> {
     // check it docker is installed
     match Command::new("which").arg(&PROGRAM).output() {
         Ok(output) => {
@@ -135,6 +133,13 @@ fn provisioning(runner_type: &str) -> AppResult<()> {
                     "Docker not installed on host marchine".to_string(),
                 ));
             }
+
+            // create docker file
+            File::create("Dockerfile")
+                .map_err(|e| AppError::System(e.to_string()))?
+                .write_all(dockerfile_content.as_bytes())
+                .map_err(|e| AppError::System(e.to_string()))?;
+
             // build the image
             // docker build -t python-runner .
             match Command::new(PROGRAM)
@@ -155,5 +160,90 @@ fn provisioning(runner_type: &str) -> AppResult<()> {
             }
         }
         Err(e) => Err(AppError::System(e.to_string())),
+    }
+}
+pub fn provisioning_v2(runner_type: &str, dockerfile_content: &str) -> AppResult<()> {
+    // check it docker is installed
+    match Command::new("which").arg(&PROGRAM).output() {
+        Ok(output) => {
+            if !output.status.success() {
+                return Err(AppError::Exec(
+                    "Docker not installed on host marchine".to_string(),
+                ));
+            }
+            // build the image
+            match Command::new(PROGRAM)
+                .arg("build")
+                .arg("-t")
+                .arg(runner_type)
+                .arg("-")
+                .stdin(Stdio::piped())
+                .spawn()
+            {
+                Ok(mut child) => match child.stdin.as_mut() {
+                    None => {
+                        todo!()
+                    }
+                    Some(stdin) => {
+                        stdin
+                            .write_all(dockerfile_content.as_bytes())
+                            .map_err(|e| AppError::System(e.to_string()))?;
+                        let output = child
+                            .wait_with_output()
+                            .map_err(|e| AppError::System(e.to_string()))?;
+                        if !output.status.success() {
+                            print_output(&output)
+                        }
+                        println!("ENV provisioned");
+                        Ok(())
+                    }
+                },
+                Err(e) => Err(AppError::System(e.to_string())),
+            }
+        }
+        Err(e) => Err(AppError::System(e.to_string())),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_runner() {
+        let dockerfile_content = r###"
+            # Use an official Python runtime as a parent image
+            FROM python:3.8
+
+            # Set the working directory in the container
+            WORKDIR /usr/src/app
+
+            # When running the container, Python will be invoked
+            ENTRYPOINT ["python", "-c"]
+        "###;
+
+        runner(
+            "python-runner",
+            dockerfile_content,
+            "print('Hello, World!')",
+            3,
+        );
+    }
+
+    #[test]
+    fn test_provisioning() {
+        let dockerfile_content = r###"
+            # Use an official Python runtime as a parent image
+            FROM python:3.8
+
+            # Set the working directory in the container
+            WORKDIR /usr/src/app
+
+            # When running the container, Python will be invoked
+            ENTRYPOINT ["python", "-c"]
+        "###;
+
+        let res = provisioning("test-runner", dockerfile_content);
+        assert!(res.is_ok());
     }
 }

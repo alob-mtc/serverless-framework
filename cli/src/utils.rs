@@ -49,7 +49,17 @@ pub fn create_fn_project_file(name: &str, runtime: &str) -> std::io::Result<File
 }
 
 pub fn create_fn_files(name: &str, _runtime: &str) -> std::io::Result<Vec<File>> {
-    let path = Path::new(name);
+    let path = Path::new("temp");
+    if path.exists() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            format!("Folder '{}' already exists.", name),
+        ));
+    }
+
+    fs::create_dir(&path)?;
+
+    let path = path.join(name);
     if path.exists() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::AlreadyExists,
@@ -62,7 +72,7 @@ pub fn create_fn_files(name: &str, _runtime: &str) -> std::io::Result<Vec<File>>
     let main_file_path = path.join("main.go");
     let main_file = File::create(&main_file_path)?;
 
-    let routes_path = path.join("routes");
+    let routes_path = path.join("functions");
     fs::create_dir(&routes_path)?;
 
     let routes_file_path = routes_path.join("routes.go");
@@ -72,7 +82,7 @@ pub fn create_fn_files(name: &str, _runtime: &str) -> std::io::Result<Vec<File>>
 }
 
 fn create_config_file(name: &str, runtime: &str) -> std::io::Result<()> {
-    let mut config_file = File::create("../../config.json")?;
+    let mut config_file = File::create("./config.json")?;
     let config = Config {
         function_name: name.to_string(),
         runtime: runtime.to_string(),

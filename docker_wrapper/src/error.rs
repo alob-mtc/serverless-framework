@@ -3,6 +3,7 @@ use std::fmt;
 // Error
 pub type AppResult<T> = Result<T, Error>;
 
+#[derive(Debug)]
 pub enum Error {
     Exec(String),
     System(String),
