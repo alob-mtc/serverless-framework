@@ -1,11 +1,13 @@
+use crate::template::ROUTES_TEMPLATE;
+use crate::utils::{create_fn_project_file, to_camel_case_handler, Config};
+use reqwest::blocking::Client;
+use serde::{Deserialize, Serialize};
 use std::fs;
-use docker_wrapper::provisioning;
-use crate::template::{DOCKERFILE_TEMPLATE, MAIN_TEMPLATE, ROUTES_TEMPLATE};
-use crate::utils::{create_fn_files, create_fn_project_file, to_camel_case_handler, Config};
-use std::fs::{File};
+use std::fs::File;
 use std::io::{Read, Write};
 
 pub fn create_new_project(name: &str, runtime: &str) {
+    println!("Creating function... '{name}' [RUNTIME:'{runtime}']");
     let handler_name = to_camel_case_handler(name);
     let file = create_fn_project_file(name, runtime).unwrap();
     let mut file = std::io::BufWriter::new(&file);
@@ -16,21 +18,7 @@ pub fn create_new_project(name: &str, runtime: &str) {
             .as_bytes(),
     )
     .unwrap();
-}
-
-pub fn create_function(name: &str, runtime: &str, function_content: &str) {
-    let handler_name = to_camel_case_handler(name);
-    let files = create_fn_files(name, runtime).unwrap();
-    let mut file = std::io::BufWriter::new(&files[0]);
-    file.write_all(
-        MAIN_TEMPLATE
-            .replace("{{ROUTE}}", name)
-            .replace("{{HANDLER}}", &handler_name)
-            .as_bytes(),
-    )
-    .unwrap();
-    let mut file = std::io::BufWriter::new(&files[1]);
-    file.write_all(function_content.as_bytes()).unwrap();
+    println!("Function created");
 }
 
 /*
@@ -45,16 +33,37 @@ pub fn deploy_function() {
     let config: Config = serde_json::from_str(&contents).unwrap();
     let name = config.function_name;
     let runtime = config.runtime;
+    println!("Deploying function... '{}'", name);
     let file = File::open(format!("{name}/function.go")).unwrap();
     let mut file = std::io::BufReader::new(file);
     let mut function_content = String::new();
     file.read_to_string(&mut function_content).unwrap();
-    println!("{}", contents);
-    create_function(&name, &runtime, &function_content);
-    // TODO: build the docker image
-    let dockerfile_content = DOCKERFILE_TEMPLATE.replace("{{FUNCTION}}", &name);
-    provisioning(&name, &dockerfile_content).unwrap();
-    // clean up
-    fs::remove_dir_all("temp").unwrap();
-    fs::remove_file("Dockerfile").unwrap();
+    let function = Function {
+        name,
+        runtime,
+        content: function_content,
+    };
+
+    // make a request to the server /upload
+    let response = Client::new()
+        .post("http://localhost:3000/upload")
+        .header("Content-Type", "application/json")
+        .body(serde_json::to_string(&function).unwrap())
+        .send()
+        .unwrap();
+
+    // Check the response
+    if response.status().is_success() {
+        let response_text = response.text().expect("Failed to read response");
+        println!("Response: {}", response_text);
+    } else {
+        println!("Failed to upload file: {:?}", response.status());
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct Function {
+    name: String,
+    runtime: String,
+    content: String,
 }

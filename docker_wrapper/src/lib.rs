@@ -2,25 +2,26 @@ mod error;
 mod utils;
 
 use error::{AppResult, Error as AppError};
-use std::io::Write;
-use std::{
-    process::{Child, Command, Stdio},
-    sync::mpsc,
-    time::{Duration, Instant},
-};
 use std::fs::File;
+use std::io::Write;
+use std::{process::{Child, Command, Stdio}, sync::mpsc, thread, time::{Duration, Instant}};
 use utils::{print_output, timeout};
 use uuid::Uuid;
 
 static PROGRAM: &str = "docker";
 static TIMEOUT: u64 = 3;
 
-pub fn runner(runner_type: &str, dockerfile_content: &str, code_snippet: &str, timeout_val: u64) {
+pub fn runner(
+    runner_type: &str,
+    dockerfile_content: &str,
+    port: &str,
+    timeout_val: u64,
+) -> Option<String> {
     println!("runner_type: {}", runner_type);
     // provision env
     if let Err(e) = provisioning(runner_type, dockerfile_content) {
         eprintln!("Failed to provision code-runner env: {e}");
-        return;
+        return None;
     }
 
     let start = Instant::now();
@@ -31,37 +32,45 @@ pub fn runner(runner_type: &str, dockerfile_content: &str, code_snippet: &str, t
         .arg(&my_uuid)
         .args(["-m", "256m"])
         .args(["--cpus", "2.0"])
+        .arg("-p")
+        .arg(port)
         .arg(runner_type)
-        .arg(code_snippet)
         .spawn()
         .expect(r###"Failed to execute "run" command"###);
 
-    let timeout_val = if timeout_val > 0 {
-        timeout_val
-    } else {
-        TIMEOUT
-    };
-    let (rx, trigger_timeout) = timeout(Duration::from_secs(timeout_val));
-    // Trigger the timeout mechanism
-    trigger_timeout();
+    let container_id = my_uuid.clone();
+    thread::spawn( move ||{
+       let timeout_val = if timeout_val > 0 {
+           timeout_val
+       } else {
+           TIMEOUT
+       };
 
-    match monitor_child_process(&mut child, rx) {
-        Ok(_) => {
-            let elapsed_time = start.elapsed();
-            println!(
-                "execution took {} seconds.",
-                (elapsed_time.as_millis() as f64 / 1000.0)
-            );
-            let output = child.wait_with_output().unwrap();
-            print_output(&output);
-        }
-        Err(e) => eprintln!("{e}"),
-    }
+       let (rx, trigger_timeout) = timeout(Duration::from_secs(timeout_val));
+       // Trigger the timeout mechanism
+       trigger_timeout();
 
-    // clean up
-    if let Err(e) = clean_up(my_uuid) {
-        eprintln!("Failed to execute clean up command: {e}");
-    }
+       match monitor_child_process(&mut child, rx) {
+           Ok(_) => {
+               let elapsed_time = start.elapsed();
+               println!(
+                   "execution took {} seconds.",
+                   (elapsed_time.as_millis() as f64 / 1000.0)
+               );
+               let output = child.wait_with_output().unwrap();
+               print_output(&output);
+           }
+           Err(e) => eprintln!("{e}"),
+       }
+
+       // clean up
+       if let Err(e) = clean_up(&container_id) {
+           eprintln!("Failed to execute clean up command: {e}");
+       }
+    });
+
+
+    Some(my_uuid)
 }
 
 fn monitor_child_process(child: &mut Child, timeout_rx: mpsc::Receiver<()>) -> AppResult<()> {
@@ -110,7 +119,7 @@ fn try_wait(child: &mut Child, timeout_killer: bool) -> AppResult<bool> {
     };
 }
 
-fn clean_up(container_name: String) -> AppResult<()> {
+fn clean_up(container_name: &str) -> AppResult<()> {
     Command::new(PROGRAM)
         .args(["rm", "-f"])
         .arg(container_name)
@@ -222,12 +231,12 @@ mod tests {
             ENTRYPOINT ["python", "-c"]
         "###;
 
-        runner(
-            "python-runner",
-            dockerfile_content,
-            "print('Hello, World!')",
-            3,
-        );
+        runner("python-runner", dockerfile_content, "8080:8080", 3);
+    }
+
+    #[test]
+    fn test_runner_2() {
+        runner("hello-api-new", "", "8080:8080", 3);
     }
 
     #[test]

@@ -47,12 +47,10 @@ fn main() {
         Some(("create-function", sub_matches)) => {
             let name = sub_matches.get_one::<String>("name").unwrap();
             let runtime = sub_matches.get_one::<String>("runtime").unwrap();
-            println!("Creating function '{name}' '{runtime}'");
             create_new_project(name, runtime);
         }
         Some(("deploy-function", sub_matches)) => {
-            let name = sub_matches.get_one::<String>("name").unwrap();
-            println!("Deploying function '{}'", name);
+            let _name = sub_matches.get_one::<String>("name").unwrap();
             deploy_function()
         }
         _ => {}

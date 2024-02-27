@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 uuid = { version = "1.7.0", features = ["v4"] }
+tokio = "1.36.0"
