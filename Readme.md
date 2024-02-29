@@ -6,3 +6,6 @@ This is a simple serverless runtime that can be used to run serverless functions
 
 Supported languages:
 - [x] Golang
+
+TODO:
+- [ ] Production readiness
