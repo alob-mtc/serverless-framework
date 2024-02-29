@@ -34,7 +34,7 @@ async fn call_function(
     println!("Starting function: {}", function_name);
     start_function(&function_name);
 
-    println!("make a request to the server /upload");
+    println!("make a request to function: {}", function_name);
     let client = Client::new();
     let response = client
         .post(&format!("http://localhost:8080/{key}").to_string())
