@@ -31,10 +31,8 @@ async fn call_function(
 ) -> impl IntoResponse {
     // spawn a new thread to run the function
     let function_name = key.clone();
-    // tokio::spawn(async move {
     println!("Starting function: {}", function_name);
     start_function(&function_name);
-    // });
 
     println!("make a request to the server /upload");
     let client = Client::new();
