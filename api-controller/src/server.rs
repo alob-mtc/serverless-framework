@@ -34,6 +34,8 @@ async fn call_function(
     println!("Starting function: {}", function_name);
     start_function(&function_name);
 
+    // TODO: core business logic
+
     println!("make a request to function: {}", function_name);
     let client = Client::new();
     let response = client
