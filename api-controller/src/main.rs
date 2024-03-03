@@ -1,6 +1,5 @@
 mod function;
 mod server;
-mod template;
 
 use server::start_server;
 

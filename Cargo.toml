@@ -3,5 +3,6 @@ members = [
     "runner",
     "cli",
     "api-controller",
-    "docker_wrapper"
+    "docker_wrapper",
+    "fn_utils"
 ]

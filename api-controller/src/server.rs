@@ -1,65 +1,61 @@
-use crate::function::{create_function, provision_docker, start_function, Function};
-use axum::extract::Path;
-use axum::routing::any;
-use axum::{http::StatusCode, response::IntoResponse, routing::post, Json, Router};
-use reqwest::blocking::Client;
+use crate::function::utils::make_request;
+use crate::function::{
+    function::{deploy_function, start_function, Function},
+    store::FunctionStore,
+};
+use axum::extract::Query;
+use axum::{
+    extract::{FromRef, Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{any, post},
+    Json, Router,
+};
+use std::collections::HashMap;
+use std::net::SocketAddr;
 
-pub async fn start_server() {
-    let app = Router::new()
-        .route("/upload", post(upload_function))
-        .route("/function/:key", any(call_function));
-
-    let addr = "0.0.0.0:3000";
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    println!("Server running on http://{}", addr);
-    axum::serve(listener, app).await.unwrap();
+#[derive(Clone, FromRef)]
+struct AppState {
+    function_store: FunctionStore,
 }
 
-async fn upload_function(Json(function): Json<Function>) -> impl IntoResponse {
+pub async fn start_server() {
+    let app_state = AppState {
+        function_store: FunctionStore::new(),
+    };
+
+    let app = Router::new()
+        .route("/upload", post(upload_function))
+        .route("/function/:key", any(call_function))
+        .with_state(app_state);
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    println!("server listening on ... {addr}");
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
+}
+
+async fn upload_function(
+    State(function_store): State<FunctionStore>,
+    Json(function): Json<Function>,
+) -> impl IntoResponse {
     println!("Received function: {:?}", function.name);
-    create_function(&function.name, &function.runtime, &function.content);
-    provision_docker(&function.name);
-    (
-        StatusCode::OK,
-        format!("Function '{}' deployed successfully", function.name),
-    )
+    deploy_function(&function_store, function)
+        .await
+        .map(|res| (StatusCode::OK, res))
 }
 
 async fn call_function(
+    State(function_store): State<FunctionStore>,
     Path(key): Path<String>,
+    Query(query): Query<HashMap<String, String>>,
     Json(body): Json<serde_json::Value>, // Assuming you're using JSON for the body
 ) -> impl IntoResponse {
-    // spawn a new thread to run the function
-    let function_name = key.clone();
-    println!("Starting function: {}", function_name);
-    start_function(&function_name);
-
-    // TODO: core business logic
-
-    println!("make a request to function: {}", function_name);
-    let client = Client::new();
-    let response = client
-        .post(&format!("http://localhost:8080/{key}").to_string())
-        .json(&body)
-        .send();
-
-    match response {
-        Ok(res) => {
-            if res.status().is_success() {
-                match res.text() {
-                    Ok(text) => (StatusCode::OK, text),
-                    Err(_) => (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "Failed to read response".to_string(),
-                    ),
-                }
-            } else {
-                (StatusCode::BAD_REQUEST, "Request failed".to_string())
-            }
-        }
-        Err(_) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to make request".to_string(),
-        ),
-    }
+    start_function(&function_store, &key).await.map(|addr| {
+        println!("making request to function: {key}");
+        let (status, response) = make_request(&addr, &key, query, body);
+        (status, response)
+    })
 }

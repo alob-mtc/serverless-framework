@@ -1,5 +1,4 @@
 mod serverless_function;
-mod template;
 mod utils;
 
 use crate::serverless_function::{create_new_project, deploy_function};

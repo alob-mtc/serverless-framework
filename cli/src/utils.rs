@@ -10,25 +10,6 @@ pub struct Config {
     pub runtime: String,
 }
 
-pub fn to_camel_case_handler(input: &str) -> String {
-    let mut result = String::new();
-    let mut capitalize_next = false;
-
-    for (i, c) in input.chars().enumerate() {
-        if c == '-' {
-            capitalize_next = true;
-        } else if capitalize_next || i == 0 {
-            result.push(c.to_ascii_uppercase());
-            capitalize_next = false;
-        } else {
-            result.push(c);
-        }
-    }
-
-    result.push_str("Handler");
-    result
-}
-
 pub fn create_fn_project_file(name: &str, runtime: &str) -> std::io::Result<File> {
     create_config_file(name, runtime)?;
 

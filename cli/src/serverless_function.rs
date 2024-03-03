@@ -1,8 +1,8 @@
-use crate::template::ROUTES_TEMPLATE;
-use crate::utils::{create_fn_project_file, to_camel_case_handler, Config};
+// use crate::template::ROUTES_TEMPLATE;
+use crate::utils::{create_fn_project_file, Config};
+use fn_utils::{template::ROUTES_TEMPLATE, to_camel_case_handler};
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 

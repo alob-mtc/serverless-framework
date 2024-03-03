@@ -10,7 +10,7 @@ pub fn timeout(timeout: Duration) -> (mpsc::Receiver<()>, Box<dyn FnOnce() -> ()
     let tiger = Box::new(move || {
         thread::spawn(move || {
             thread::sleep(timeout);
-            tx.send(()).unwrap();
+            let _ = tx.send(());
         });
     });
 
