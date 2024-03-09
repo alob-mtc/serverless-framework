@@ -4,6 +4,7 @@ use crate::function::{
     store::FunctionStore,
 };
 use axum::extract::Query;
+use axum::http::HeaderMap;
 use axum::{
     extract::{FromRef, Path, State},
     http::StatusCode,
@@ -51,11 +52,12 @@ async fn call_function(
     State(function_store): State<FunctionStore>,
     Path(key): Path<String>,
     Query(query): Query<HashMap<String, String>>,
+    headers: HeaderMap,
     Json(body): Json<serde_json::Value>, // Assuming you're using JSON for the body
 ) -> impl IntoResponse {
     start_function(&function_store, &key).await.map(|addr| {
         println!("making request to function: {key}");
-        let (status, response) = make_request(&addr, &key, query, body);
-        (status, response)
+        let res = make_request(&addr, &key, query, headers, body);
+        res
     })
 }

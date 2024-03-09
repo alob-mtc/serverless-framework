@@ -1,6 +1,7 @@
-use axum::extract::Query;
-use axum::http::{StatusCode as AxumStatusCode, StatusCode};
+use axum::http::{HeaderMap, Response, StatusCode as AxumStatusCode, StatusCode};
+use axum::response::IntoResponse;
 use reqwest::blocking::Client;
+use reqwest::header::HeaderMap as ReqwestHeaderMap;
 use reqwest::StatusCode as ReqwestStatusCode;
 use std::collections::HashMap;
 use std::fs;
@@ -10,6 +11,20 @@ use std::path::Path;
 fn convert_status_code(reqwest_status: ReqwestStatusCode) -> AxumStatusCode {
     AxumStatusCode::from_u16(reqwest_status.as_u16())
         .unwrap_or(AxumStatusCode::INTERNAL_SERVER_ERROR)
+}
+
+fn convert_axum_headers_to_req_header(headers: HeaderMap) -> ReqwestHeaderMap {
+    let mut header_res = ReqwestHeaderMap::new();
+    for (hn, hv) in headers.iter() {
+        header_res.append(hn, hv.clone());
+    }
+    header_res
+}
+
+fn convert_req_header_to_axum_headers(req_headers: &ReqwestHeaderMap, res_headers: &mut HeaderMap) {
+    for (hn, hv) in req_headers.iter() {
+        res_headers.append(hn, hv.clone());
+    }
 }
 
 // random 4 digit port generator
@@ -30,29 +45,38 @@ pub fn make_request(
     addr: &str,
     key: &str,
     query: HashMap<String, String>,
+    headers: HeaderMap,
     body: serde_json::Value,
-) -> (StatusCode, String) {
+) -> impl IntoResponse {
     let client = Client::new();
     let response = client
         .post(&create_url(addr, key, query))
+        .headers(convert_axum_headers_to_req_header(headers))
         .json(&body)
         .send();
 
     match response {
         Ok(res) => {
             let status = convert_status_code(res.status());
+            let req_headers = res.headers().clone();
             match res.text() {
-                Ok(text) => (status, text),
-                Err(_) => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Failed to read response".to_string(),
-                ),
+                Ok(text) => {
+                    let mut response = Response::builder().status(status).body(text).unwrap();
+
+                    let headers = response.headers_mut();
+                    convert_req_header_to_axum_headers(&req_headers, headers);
+                    response
+                }
+                Err(_) => Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body("Failed to read response".to_string())
+                    .unwrap(),
             }
         }
-        Err(_) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to make request".to_string(),
-        ),
+        Err(_) => Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body("Failed to make request".to_string())
+            .unwrap(),
     }
 }
 
