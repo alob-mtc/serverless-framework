@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = { version = "0.6.20", features = ["macros"] }
+axum = { version = "0.6.20", features = ["macros", "multipart"] }
 tokio = { version = "1", features = ["full"] }
 bytes = "1"
 docker_wrapper = { path = "../docker_wrapper" }
@@ -15,3 +15,4 @@ serde_json = "1.0.114"
 reqwest = { version = "0.10", features = ["blocking", "json"] }
 fn_utils = { path = "../fn_utils" }
 rand = "0.8.5"
+futures-util = "0.3.30"

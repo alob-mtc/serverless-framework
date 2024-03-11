@@ -1,17 +1,19 @@
 use crate::function::utils::make_request;
 use crate::function::{
-    function::{deploy_function, start_function, Function},
+    function::{deploy_function, start_function},
     store::FunctionStore,
 };
-use axum::extract::Query;
 use axum::http::HeaderMap;
 use axum::{
-    extract::{FromRef, Path, State},
+    extract::{FromRef, Multipart, Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{any, post},
     Json, Router,
 };
+
+use crate::function::function::Function;
+use futures_util::stream::StreamExt;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 
@@ -40,12 +42,30 @@ pub async fn start_server() {
 
 async fn upload_function(
     State(function_store): State<FunctionStore>,
-    Json(function): Json<Function>,
+    mut multipart: Multipart,
 ) -> impl IntoResponse {
-    println!("Received function: {:?}", function.name);
-    deploy_function(&function_store, function)
-        .await
-        .map(|res| (StatusCode::OK, res))
+    // TODO: prepare error handling
+    while let Ok(Some(mut field)) = multipart.next_field().await {
+        let file_name = field.file_name().unwrap().to_owned();
+        if file_name.ends_with(".zip") {
+            let mut buffer = Vec::new();
+            while let Some(chunk) = field.next().await {
+                buffer.extend_from_slice(&chunk.unwrap());
+            }
+
+            let function_name = file_name.split('.').collect::<Vec<&str>>()[0];
+            println!("Received function: {:?}", function_name);
+            let function = Function {
+                name: function_name.to_string(),
+                runtime: "go".to_string(),
+                content: buffer,
+            };
+            return deploy_function(&function_store, function)
+                .await
+                .map(|res| (StatusCode::OK, res));
+        }
+    }
+    Ok((StatusCode::BAD_REQUEST, "Unexpected req".to_string()))
 }
 
 async fn call_function(

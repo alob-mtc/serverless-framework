@@ -3,6 +3,7 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use std::process::Command;
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
@@ -38,4 +39,11 @@ fn create_config_file(name: &str, runtime: &str) -> std::io::Result<()> {
     let serialized = serde_json::to_string(&config)?;
     println!("config: {}", serialized);
     config_file.write_all(serialized.as_bytes())
+}
+
+
+pub fn init_go_mod(function_name: &str) -> std::io::Result<()> {
+    println!("Initializing go mod...");
+    let mut mod_file = File::create(format!("{}/go.mod", function_name))?;
+    mod_file.write_all( fn_utils::template::FUNCTION_MODULE_TEMPLATE.as_bytes())
 }

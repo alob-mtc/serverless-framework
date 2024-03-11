@@ -6,7 +6,17 @@ use reqwest::StatusCode as ReqwestStatusCode;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+pub struct ScopeCall<F: FnMut()> {
+    pub c: Option<F>,
+}
+
+impl<F: FnMut()> Drop for ScopeCall<F> {
+    fn drop(&mut self) {
+        self.c.take().unwrap()()
+    }
+}
 
 fn convert_status_code(reqwest_status: ReqwestStatusCode) -> AxumStatusCode {
     AxumStatusCode::from_u16(reqwest_status.as_u16())
@@ -80,7 +90,7 @@ pub fn make_request(
     }
 }
 
-pub fn create_fn_files(name: &str, _runtime: &str) -> std::io::Result<Vec<File>> {
+pub fn create_fn_files_base(name: &str, _runtime: &str) -> std::io::Result<(PathBuf, File)> {
     let path = Path::new("temp");
     if path.exists() {
         return Err(std::io::Error::new(
@@ -104,11 +114,5 @@ pub fn create_fn_files(name: &str, _runtime: &str) -> std::io::Result<Vec<File>>
     let main_file_path = path.join("main.go");
     let main_file = File::create(&main_file_path)?;
 
-    let routes_path = path.join("functions");
-    fs::create_dir(&routes_path)?;
-
-    let routes_file_path = routes_path.join("routes.go");
-    let routes_file = File::create(&routes_file_path)?;
-
-    Ok(vec![main_file, routes_file])
+    Ok((path, main_file))
 }

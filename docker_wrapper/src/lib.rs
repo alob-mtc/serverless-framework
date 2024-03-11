@@ -131,7 +131,7 @@ pub fn provisioning(runner_type: &str, dockerfile_content: &str) -> AppResult<()
         Ok(output) => {
             if !output.status.success() {
                 return Err(AppError::Exec(
-                    "Docker not installed on host marchine".to_string(),
+                    "Docker not installed on host machine".to_string(),
                 ));
             }
 
@@ -152,7 +152,8 @@ pub fn provisioning(runner_type: &str, dockerfile_content: &str) -> AppResult<()
             {
                 Ok(output) => {
                     if !output.status.success() {
-                        print_output(&output)
+                        print_output(&output);
+                        return Err(AppError::Exec("Failed to build docker image".to_string()));
                     }
                     println!("ENV provisioned");
                     Ok(())
@@ -169,7 +170,7 @@ pub fn provisioning_v2(runner_type: &str, dockerfile_content: &str) -> AppResult
         Ok(output) => {
             if !output.status.success() {
                 return Err(AppError::Exec(
-                    "Docker not installed on host marchine".to_string(),
+                    "Docker not installed on host machine".to_string(),
                 ));
             }
             // build the image
@@ -193,7 +194,8 @@ pub fn provisioning_v2(runner_type: &str, dockerfile_content: &str) -> AppResult
                             .wait_with_output()
                             .map_err(|e| AppError::System(e.to_string()))?;
                         if !output.status.success() {
-                            print_output(&output)
+                            print_output(&output);
+                            return Err(AppError::Exec("Failed to build docker image".to_string()));
                         }
                         println!("ENV provisioned");
                         Ok(())

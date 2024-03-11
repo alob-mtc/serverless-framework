@@ -1,10 +1,9 @@
 // use crate::template::ROUTES_TEMPLATE;
-use crate::utils::{create_fn_project_file, Config};
-use fn_utils::{template::ROUTES_TEMPLATE, to_camel_case_handler};
-use reqwest::blocking::Client;
-use serde::{Deserialize, Serialize};
+use crate::utils::{create_fn_project_file, init_go_mod, Config};
+use fn_utils::{compress_dir_with_excludes, template::ROUTES_TEMPLATE, to_camel_case_handler};
+use reqwest::blocking::{multipart, Client};
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Cursor, Read, Write};
 
 pub fn create_new_project(name: &str, runtime: &str) {
     println!("Creating function... '{name}' [RUNTIME:'{runtime}']");
@@ -18,6 +17,8 @@ pub fn create_new_project(name: &str, runtime: &str) {
             .as_bytes(),
     )
     .unwrap();
+    // init go mod
+    init_go_mod(name).unwrap();
     println!("Function created");
 }
 
@@ -32,38 +33,43 @@ pub fn deploy_function() {
     config_file.read_to_string(&mut contents).unwrap();
     let config: Config = serde_json::from_str(&contents).unwrap();
     let name = config.function_name;
-    let runtime = config.runtime;
+    let _runtime = config.runtime;
     println!("Deploying function... '{}'", name);
-    let file = File::open(format!("{name}/function.go")).unwrap();
-    let mut file = std::io::BufReader::new(file);
-    let mut function_content = String::new();
-    file.read_to_string(&mut function_content).unwrap();
-    let function = Function {
-        name,
-        runtime,
-        content: function_content,
-    };
+    let mut dest_zip = Cursor::new(Vec::new());
+    match compress_dir_with_excludes(
+        std::path::Path::new(&name),
+        // TODO: don't write to disk
+        &mut dest_zip,
+        &["go.mod", "go.sum"],
+    ) {
+        Ok(_) => {
+            // Reset the cursor to the beginning of the buffer
+            dest_zip.set_position(0);
 
-    // make a request to the server /upload
-    let response = Client::new()
-        .post("http://localhost:3000/upload")
-        .header("Content-Type", "application/json")
-        .body(serde_json::to_string(&function).unwrap())
-        .send()
-        .unwrap();
+            let form = multipart::Form::new().part(
+                "file",
+                multipart::Part::reader(dest_zip)
+                    .file_name(format!("{name}.zip"))
+                    .mime_str("application/zip")
+                    .unwrap(),
+            );
 
-    // Check the response
-    if response.status().is_success() {
-        let response_text = response.text().expect("Failed to read response");
-        println!("Response: {}", response_text);
-    } else {
-        println!("Failed to upload file: {:?}", response.status());
+            let response = Client::new()
+                .post("http://localhost:3000/upload")
+                .multipart(form)
+                .send()
+                .unwrap();
+
+            // Check the response
+            if response.status().is_success() {
+                let response_text = response.text().expect("Failed to read response");
+                println!("Response: {}", response_text);
+            } else {
+                println!("Failed to upload file: {:?}, {:?}", response.status(), response.text());
+            }
+        }
+        Err(e) => {
+            println!("Failed to deploy function: {}", e);
+        }
     }
-}
-
-#[derive(Serialize, Deserialize)]
-struct Function {
-    name: String,
-    runtime: String,
-    content: String,
 }
