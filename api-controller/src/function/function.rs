@@ -68,7 +68,7 @@ pub async fn start_function(function_store: &FunctionStore, name: &str) -> Resul
             let timeout = 5;
             match runner(name, &format!("{port}:8080"), timeout) {
                 None => {
-                    return Err(Error::FunctionFailedToStart(addr));
+                    return Err(Error::FunctionFailedToStart(name.to_string()));
                 }
                 Some(_) => {
                     let function = FunctionAddr {
@@ -79,7 +79,7 @@ pub async fn start_function(function_store: &FunctionStore, name: &str) -> Resul
                         .add_function(function, tokio::time::Duration::from_secs(timeout))
                         .await;
                     println!("Function started at: {}", addr);
-                    // 2 seconds sleep
+                    // 1 seconds sleep
                     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                     Ok(addr)
                 }

@@ -1,4 +1,4 @@
-# serverless runtime
+# serverless runtime (POC)
 
 This is a simple serverless runtime that can be used to run serverless functions.
 
