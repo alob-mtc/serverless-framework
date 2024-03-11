@@ -34,6 +34,6 @@ TODO:
   - [x] Create function
   - [x] Deploy function
   - [x] Make sure the function uses the same go version as the docker image 
-  - [ ] Support multiple files
+  - [x] Support multiple files
   - [x] Support go module system
    
