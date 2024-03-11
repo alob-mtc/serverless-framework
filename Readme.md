@@ -32,6 +32,7 @@ TODO:
       - [x] Check Is function already started
 - [x] Create CLI
   - [x] Create function
+  - [ ] Support environment variables
   - [x] Deploy function
   - [x] Make sure the function uses the same go version as the docker image 
   - [x] Support multiple files
