@@ -18,6 +18,18 @@ impl<F: FnMut()> Drop for ScopeCall<F> {
     }
 }
 
+pub fn defer_fn<T: FnMut()>(c: T) -> ScopeCall<T> {
+    ScopeCall { c: Some(c) }
+}
+
+pub fn envs_to_string(envs: HashMap<String, String>) -> String {
+    let mut envs_str = String::new();
+    for (key, value) in envs {
+        envs_str.push_str(&format!("ENV {}=\"{}\"\n", key, value));
+    }
+    envs_str
+}
+
 fn convert_status_code(reqwest_status: ReqwestStatusCode) -> AxumStatusCode {
     AxumStatusCode::from_u16(reqwest_status.as_u16())
         .unwrap_or(AxumStatusCode::INTERNAL_SERVER_ERROR)

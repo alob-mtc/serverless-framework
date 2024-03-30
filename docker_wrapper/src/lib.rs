@@ -16,11 +16,23 @@ use uuid::Uuid;
 static PROGRAM: &str = "docker";
 static TIMEOUT: u64 = 3;
 
-pub fn runner(runner_type: &str, port: &str, timeout_val: u64) -> Option<String> {
+fn inject_env_vars(cmd: &mut Command, envs: Vec<(String, String)>) {
+    for (key, value) in envs {
+        cmd.args(["-e", &format!("{}={}", key, value)]);
+    }
+}
+
+pub fn runner(
+    runner_type: &str,
+    port: &str,
+    envs: Vec<(String, String)>,
+    timeout_val: u64,
+) -> Option<String> {
     let start = Instant::now();
     let my_uuid = Uuid::new_v4().to_string();
-    let mut child = Command::new(PROGRAM)
-        .arg("run")
+    let mut cmd = Command::new(PROGRAM);
+    inject_env_vars(&mut cmd.arg("run"), envs);
+    let mut child = cmd
         .arg("--name")
         .arg(&my_uuid)
         .args(["-m", "256m"])
@@ -48,7 +60,7 @@ pub fn runner(runner_type: &str, port: &str, timeout_val: u64) -> Option<String>
                 let elapsed_time = start.elapsed();
                 println!(
                     "execution took {} seconds.",
-                    (elapsed_time.as_millis() as f64 / 1000.0)
+                    elapsed_time.as_millis() as f64 / 1000.0
                 );
                 let output = child.wait_with_output().unwrap();
                 print_output(&output);
@@ -215,7 +227,7 @@ mod tests {
     #[test]
     fn test_runner() {
         // the provided image should be available
-        runner("python-runner", "8080:8080", 3);
+        runner("python-runner", "8080:8080", vec![], 3);
     }
 
     #[test]

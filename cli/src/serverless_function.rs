@@ -1,5 +1,5 @@
 // use crate::template::ROUTES_TEMPLATE;
-use crate::utils::{create_fn_project_file, init_go_mod, Config};
+use crate::utils::{create_fn_project_file, init_go_mod, GlobalConfig};
 use fn_utils::{compress_dir_with_excludes, template::ROUTES_TEMPLATE, to_camel_case_handler};
 use reqwest::blocking::{multipart, Client};
 use std::fs::File;
@@ -27,18 +27,21 @@ TODO: archive the function and send to a remote server
 
 build the docker image
 */
-pub fn deploy_function() {
+pub fn deploy_function(name: &str) {
     let mut config_file = File::open("./config.json").unwrap();
     let mut contents = String::new();
     config_file.read_to_string(&mut contents).unwrap();
-    let config: Config = serde_json::from_str(&contents).unwrap();
-    let name = config.function_name;
+    let config: GlobalConfig = serde_json::from_str(&contents).unwrap();
+    if !config.function_name.contains(&name.to_string()) {
+        println!("Function '{}' not found", name);
+        return;
+    }
     let _runtime = config.runtime;
     println!("Deploying function... '{}'", name);
     let mut dest_zip = Cursor::new(Vec::new());
     match compress_dir_with_excludes(
-        std::path::Path::new(&name),
-        // TODO: don't write to disk
+        std::path::Path::new(name),
+        // don't write to disk
         &mut dest_zip,
         &["go.mod", "go.sum"],
     ) {
@@ -65,7 +68,11 @@ pub fn deploy_function() {
                 let response_text = response.text().expect("Failed to read response");
                 println!("Response: {}", response_text);
             } else {
-                println!("Failed to upload file: {:?}, {:?}", response.status(), response.text());
+                println!(
+                    "Failed to upload file: {:?}, {:?}",
+                    response.status(),
+                    response.text()
+                );
             }
         }
         Err(e) => {

@@ -97,6 +97,18 @@ pub fn extract_zip_from_cursor(cursor: Cursor<Vec<u8>>, dest_dir: &PathBuf) -> i
     Ok(())
 }
 
+pub fn find_file_in_path(file_name: &str, path: PathBuf) -> Option<String> {
+    let dir = fs::read_dir(path).ok()?;
+    for entry in dir {
+        let entry = entry.ok()?;
+        let file = entry.file_name().into_string().ok()?;
+        if file == file_name {
+            return Some(entry.path().to_str()?.to_string());
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

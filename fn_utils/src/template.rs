@@ -53,11 +53,14 @@ RUN go build -o main .
 # Expose port 8080 to the outside world
 EXPOSE 8080
 
+# Env
+{{ENV}}
+
 # Command to run the executable
 CMD ["./main"]
 "#;
 
-pub const FUNCTION_MODULE_TEMPLATE : &str = r#"
+pub const FUNCTION_MODULE_TEMPLATE: &str = r#"
 module serverless-function
 
 go 1.19

@@ -9,6 +9,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     FunctionNotRegistered(String),
     FunctionFailedToStart(String),
+    BadFunction(String),
     SystemError(String),
 }
 
@@ -22,6 +23,11 @@ impl IntoResponse for Error {
             Error::FunctionFailedToStart(s) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to start function: {s}"),
+            )
+                .into_response(),
+            Error::BadFunction(b) => (
+                StatusCode::BAD_REQUEST,
+                format!("Bad function: {b}"),
             )
                 .into_response(),
             Error::SystemError(_) => (

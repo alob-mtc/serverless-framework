@@ -49,8 +49,8 @@ fn main() {
             create_new_project(name, runtime);
         }
         Some(("deploy-function", sub_matches)) => {
-            let _name = sub_matches.get_one::<String>("name").unwrap();
-            deploy_function()
+            let name = sub_matches.get_one::<String>("name").unwrap();
+            deploy_function(name)
         }
         _ => {}
     }
