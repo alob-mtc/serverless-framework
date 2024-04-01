@@ -1,6 +1,6 @@
-# serverless runtime (POC)
+# serverless framework (POC)
 
-This is a simple serverless runtime that can be used to run serverless functions.
+This is a simple serverless framework that can be used to run serverless functions.
 
 ![Serverless Architecture](./asset/serverless.jpg "Architecture")
 
