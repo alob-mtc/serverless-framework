@@ -82,6 +82,7 @@ pub async fn deploy_function(function_store: &FunctionStore, function: Function)
     // build the function docker image
     provision_docker(&name, envs)?;
     function_store.register_function(&name).await;
+    _ = temp; // remove lint error
     Ok(format!("Function '{}' deployed successfully", name).to_string())
 }
 
