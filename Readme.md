@@ -16,6 +16,12 @@ Supported languages:
 
 - [x] Golang
 
-TODO:
+## Documentation
+
+For more detailed information, please refer to the following documents:
+- [Production Checklist](./production-checklist.md)
+- [Project Roadmap](./roadmap.md)
+
+## TODO
 - [ ] Create a new architecture for the new direction of the project
 - [ ] Create a road map for the project
