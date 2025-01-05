@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use urlencoding::encode;
 
 pub struct ScopeCall<F: FnMut()> {
     pub c: Option<F>,
@@ -56,10 +57,19 @@ pub fn random_port() -> String {
 }
 
 fn create_url(addr: &str, key: &str, query: HashMap<String, String>) -> String {
-    let mut url = format!("http://{addr}/{key}");
-    for (k, v) in query.iter() {
-        url.push_str(&format!("?{k}={v}"));
+    let mut url = format!("http://{}/{}", addr, key);
+
+    if !query.is_empty() {
+        let query_string = query
+            .iter()
+            .map(|(k, v)| format!("{}={}", encode(k), encode(v))) // Escape query parameters
+            .collect::<Vec<_>>()
+            .join("&");
+
+        url.push('?');
+        url.push_str(&query_string);
     }
+
     url
 }
 

@@ -32,36 +32,49 @@ func {{HANDLER}}(w http.ResponseWriter, r *http.Request) {
 "#;
 
 pub const DOCKERFILE_TEMPLATE: &str = r#"
-# Use the official Golang image as a base image
-FROM golang:1.19
+# Stage 1: Build Stage
+FROM golang:1.23 as builder
 
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the local package files to the container's workspace
+# Copy the specific function package into the container's workspace
+# Replace {{FUNCTION}} with the actual function directory or file
 COPY ./temp/{{FUNCTION}} .
 
-# Copy go mod and sum files
+# Initialize the Go module (if not already initialized)
 RUN go mod init serverless-function
 
-# Download and install any required third-party dependencies
-RUN go mod tidy
+# Download dependencies early to leverage Docker cache
+RUN go mod download
+
+# Copy the application source code
+COPY ./temp/{{FUNCTION}} .
 
 # Build the Go app
-RUN go build -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
-# Expose port 8080 to the outside world
+# Stage 2: Runtime Stage
+FROM alpine:latest
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/main .
+
+# Expose port 8080
 EXPOSE 8080
 
-# Env
+# Set environment variables (replace with actual environment configurations)
 {{ENV}}
 
-# Command to run the executable
+# Command to run the application
 CMD ["./main"]
 "#;
 
 pub const FUNCTION_MODULE_TEMPLATE: &str = r#"
 module serverless-function
 
-go 1.19
+go 1.23
 "#;

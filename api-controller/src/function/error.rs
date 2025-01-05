@@ -25,11 +25,9 @@ impl IntoResponse for Error {
                 format!("Failed to start function: {s}"),
             )
                 .into_response(),
-            Error::BadFunction(b) => (
-                StatusCode::BAD_REQUEST,
-                format!("Bad function: {b}"),
-            )
-                .into_response(),
+            Error::BadFunction(b) => {
+                (StatusCode::BAD_REQUEST, format!("Bad function: {b}")).into_response()
+            }
             Error::SystemError(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "This is on us and we are working on it".to_string(),

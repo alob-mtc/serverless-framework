@@ -2,7 +2,7 @@ use self::utils::defer_fn;
 
 use super::*;
 use crate::function::error::Error;
-use docker_wrapper::{provisioning, runner};
+use docker_wrapper::core::{provisioning::provisioning, runner::runner};
 use error::Result;
 use fn_utils::{
     extract_zip_from_cursor, find_file_in_path,
@@ -17,6 +17,7 @@ use function::{
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Write;
+use std::time::Duration;
 use std::{collections::HashMap, io::Cursor};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -87,7 +88,7 @@ pub async fn deploy_function(function_store: &FunctionStore, function: Function)
 }
 
 pub async fn start_function(function_store: &FunctionStore, name: &str) -> Result<String> {
-    return match function_store.get_function(name).await {
+    match function_store.get_function(name).await {
         Some(addr) => {
             println!("Function already running at: {}", addr);
             Ok(addr)
@@ -98,26 +99,27 @@ pub async fn start_function(function_store: &FunctionStore, name: &str) -> Resul
             }
             let port = random_port();
             let addr = format!("localhost:{}", port);
-            let timeout = 5;
-            let envs = Vec::new();
-            match runner(name, &format!("{port}:8080"), envs, timeout) {
-                None => {
-                    return Err(Error::FunctionFailedToStart(name.to_string()));
-                }
-                Some(_) => {
+            let timeout = 10;
+            match runner(
+                name,
+                &format!("{port}:8080"),
+                Some(Duration::from_secs(timeout)),
+            )
+            .await
+            {
+                Err(e) => Err(Error::FunctionFailedToStart(name.to_string())),
+                Ok(_) => {
                     let function = FunctionAddr {
                         name: name.to_string(),
                         addr: addr.to_string(),
                     };
                     function_store
-                        .add_function(function, tokio::time::Duration::from_secs(timeout))
+                        .add_function(function, Duration::from_secs(timeout))
                         .await;
-                    println!("Function started at: {}", addr);
-                    // 1 seconds sleep
-                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                    println!("Function started at: {addr}");
                     Ok(addr)
                 }
             }
         }
-    };
+    }
 }

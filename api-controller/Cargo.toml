@@ -16,3 +16,4 @@ reqwest = { version = "0.10", features = ["blocking", "json"] }
 fn_utils = { path = "../fn_utils" }
 rand = "0.8.5"
 futures-util = "0.3.30"
+urlencoding = "2.1"
