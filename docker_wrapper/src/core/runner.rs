@@ -230,9 +230,8 @@ mod tests {
 }
 
 #[tokio::test]
-async fn test_runner_v2() {
+async fn test_runner() {
     // Make sure the "hello-world" image is available locally or can be pulled.
-    let result = runner("hello-world", "8080:8080", None).await;
+    let result = runner("test-runner", "8080:8080", None).await;
     assert!(result.is_ok(), "Container should start successfully.");
-    sleep(Duration::from_secs(10)).await;
 }
