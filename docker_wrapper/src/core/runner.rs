@@ -59,7 +59,7 @@ pub async fn runner(
         }]),
     );
 
-    let (cpu_period, cpu_quota) = cpu_limits(1.0);
+    let (cpu_period, cpu_quota) = cpu_limits(NUM_CPUS);
     // Configure the container.
     let container_config = Config {
         image: Some(image_name),
@@ -108,8 +108,8 @@ pub async fn runner(
     spawn(async move {
         //TODO: confirm if this auto die once container is killed, if not
         // receive a kill signal for container and stop streaming logs
-        while let Some(Ok(logOut)) = output.next().await {
-            let bytes = logOut.into_bytes();
+        while let Some(Ok(log_out)) = output.next().await {
+            let bytes = log_out.into_bytes();
             let text = String::from_utf8_lossy(&bytes);
             println!("Container STDOUT: <<< {text} >>>");
         }

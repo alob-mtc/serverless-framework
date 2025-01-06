@@ -17,3 +17,4 @@ fn_utils = { path = "../fn_utils" }
 rand = "0.8.5"
 futures-util = "0.3.30"
 urlencoding = "2.1"
+log = "0.4.20"

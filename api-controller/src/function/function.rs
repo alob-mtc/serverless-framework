@@ -107,7 +107,7 @@ pub async fn start_function(function_store: &FunctionStore, name: &str) -> Resul
             )
             .await
             {
-                Err(e) => Err(Error::FunctionFailedToStart(name.to_string())),
+                Err(_e) => Err(Error::FunctionFailedToStart(name.to_string())),
                 Ok(_) => {
                     let function = FunctionAddr {
                         name: name.to_string(),

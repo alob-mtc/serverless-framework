@@ -89,6 +89,7 @@ dependencies = [
  "docker_wrapper",
  "fn_utils",
  "futures-util",
+ "log",
  "rand",
  "reqwest 0.10.10",
  "serde",
