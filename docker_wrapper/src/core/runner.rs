@@ -7,7 +7,7 @@ use bollard::Docker;
 use futures_util::StreamExt;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
-use tokio::{spawn, time::sleep};
+use tokio::spawn;
 
 const TIMEOUT_DEFAULT: u64 = 5;
 const BYTES_IN_MB: i64 = 1024 * 1024; // 1 MB in bytes

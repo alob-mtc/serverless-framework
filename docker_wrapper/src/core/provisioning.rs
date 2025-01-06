@@ -1,12 +1,10 @@
 use crate::shared::error::{AppResult, Error as AppError};
 use crate::shared::utils::print_output;
-use std::fmt::Debug;
 use std::fs::File;
-use std::io::{BufRead, Write};
+use std::io::Write;
 use std::process::Command;
 
 static PROGRAM: &str = "docker";
-static TIMEOUT: u64 = 3;
 
 pub fn provisioning(runner_type: &str, dockerfile_content: &str) -> AppResult<()> {
     // check it docker is installed
