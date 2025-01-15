@@ -9,7 +9,7 @@ use repository::db_repo::FunctionDBRepo;
 use sea_orm::DatabaseConnection;
 use std::collections::HashMap;
 use std::io::{Cursor, Write};
-use std::{default::Default, fs};
+use std::fs;
 
 pub fn create_function(
     name: &str,

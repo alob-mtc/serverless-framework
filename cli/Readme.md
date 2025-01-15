@@ -21,7 +21,7 @@ Creates a new serverless function.
 #### Create function
 
 ```sh
-cli create-service -n <NAME> [-r <RUNTIME>]
+cli create-function -n <NAME> [-r <RUNTIME>]
 ```
 
 Arguments
@@ -32,7 +32,7 @@ Arguments
 Example
 
 ```sh
-cli create-service -n my-service -r go
+cli create-function -n my-function -r go
 ```
 
 #### Deploy function
@@ -42,7 +42,7 @@ Deploys an existing severless function
 Usage
 
 ```sh
-cli deploy-service -n <NAME>
+cli deploy-function -n <NAME>
 ```
 
 Arguments
@@ -52,5 +52,5 @@ Arguments
 Example
 
 ```sh
-cli deploy-service -n my-service
+cli deploy-function -n my-function
 ```

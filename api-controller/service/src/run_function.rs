@@ -1,6 +1,4 @@
 use crate::error::Error;
-use crate::models::Function;
-use crate::store::FunctionAddr;
 use crate::utils::random_port;
 use docker_wrapper::core::runner::runner;
 use redis::aio::MultiplexedConnection;
