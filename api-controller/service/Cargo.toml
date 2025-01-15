@@ -1,0 +1,21 @@
+[package]
+name = "service"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+axum = { version = "0.6.20", features = ["macros", "multipart"] }
+tokio = { version = "1", features = ["full"] }
+docker_wrapper = { path = "../../docker_wrapper" }
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = "1.0.114"
+reqwest = { version = "0.10", features = ["blocking", "json"] }
+fn_utils = { path = "../../fn_utils" }
+rand = "0.8.5"
+urlencoding = "2.1"
+log = "0.4.20"
+sea-orm = "1.1.4"
+redis = { version = "0.28.1", features = ["tokio-comp"] }
+repository = {path = "../repository"}
+entity = {path = "../entity"}

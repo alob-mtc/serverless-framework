@@ -34,7 +34,7 @@ pub fn to_camel_case_handler(input: &str) -> String {
 ///
 /// # Returns
 ///
-/// Result<(), io::Error> - The function returns a Result type, which is Ok if the operation
+/// Result<(), io::Error> - The service returns a Result type, which is Ok if the operation
 /// is successful, or an Err containing an io::Error if an error occurs.
 pub fn compress_dir_with_excludes(
     src_dir: &Path,

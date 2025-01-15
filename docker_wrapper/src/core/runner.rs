@@ -111,7 +111,7 @@ pub async fn runner(
         while let Some(Ok(log_out)) = output.next().await {
             let bytes = log_out.into_bytes();
             let text = String::from_utf8_lossy(&bytes);
-            println!("Container STDOUT: <<< {text} >>>");
+            // println!("Container STDOUT: <<< {text} >>>");
         }
     });
 

@@ -23,7 +23,7 @@ impl FunctionStore {
     }
 }
 
-// function store
+// service store
 impl FunctionStore {
     pub async fn register_function(&self, name: &str) {
         let mut store = self.store.lock().await;
@@ -36,7 +36,7 @@ impl FunctionStore {
     }
 }
 
-// function cache
+// service cache
 impl FunctionStore {
     pub async fn add_function(&self, function: FunctionAddr, ttl: Duration) {
         let mut store = self.cache.lock().await;

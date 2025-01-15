@@ -3,7 +3,7 @@
 This is a simple serverless framework(runtime and cli) that can be used to run serverless functions in a durable way.
 
 
-![Serverless Architecture](./asset/serverless.jpg "Architecture")
+![Serverless Architecture](./asset/serverless.png "Architecture")
 
 ## Running
 

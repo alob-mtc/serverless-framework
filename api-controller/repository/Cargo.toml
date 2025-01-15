@@ -1,0 +1,10 @@
+[package]
+name = "repository"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+sea-orm = "1.1.4"
+redis = { version = "0.28.1", features = ["tokio-comp"] }
+entity = { path = "../entity" }

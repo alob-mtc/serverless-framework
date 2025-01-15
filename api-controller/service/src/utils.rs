@@ -3,6 +3,7 @@ use axum::response::IntoResponse;
 use reqwest::blocking::Client;
 use reqwest::header::HeaderMap as ReqwestHeaderMap;
 use reqwest::StatusCode as ReqwestStatusCode;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -46,6 +47,7 @@ fn convert_axum_headers_to_req_header(headers: HeaderMap) -> ReqwestHeaderMap {
 
 fn convert_req_header_to_axum_headers(req_headers: &ReqwestHeaderMap, res_headers: &mut HeaderMap) {
     for (hn, hv) in req_headers.iter() {
+        println!("hn: {} hv: {:?}", hn.to_string(), hv.to_str());
         res_headers.append(hn, hv.clone());
     }
 }
@@ -78,7 +80,7 @@ pub fn make_request(
     key: &str,
     query: HashMap<String, String>,
     headers: HeaderMap,
-    body: serde_json::Value,
+    body: Value,
 ) -> impl IntoResponse {
     let client = Client::new();
     let response = client

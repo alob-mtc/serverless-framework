@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::{Cursor, Read, Write};
 
 pub fn create_new_project(name: &str, runtime: &str) {
-    println!("Creating function... '{name}' [RUNTIME:'{runtime}']");
+    println!("Creating service... '{name}' [RUNTIME:'{runtime}']");
     let handler_name = to_camel_case_handler(name);
     let file = create_fn_project_file(name, runtime).unwrap();
     let mut file = std::io::BufWriter::new(&file);
@@ -23,7 +23,7 @@ pub fn create_new_project(name: &str, runtime: &str) {
 }
 
 /*
-TODO: archive the function and send to a remote server
+TODO: archive the service and send to a remote server
 
 build the docker image
 */
@@ -37,7 +37,7 @@ pub fn deploy_function(name: &str) {
         return;
     }
     let _runtime = config.runtime;
-    println!("Deploying function... '{}'", name);
+    println!("Deploying service... '{}'", name);
     let mut dest_zip = Cursor::new(Vec::new());
     match compress_dir_with_excludes(
         std::path::Path::new(name),
@@ -76,7 +76,7 @@ pub fn deploy_function(name: &str) {
             }
         }
         Err(e) => {
-            println!("Failed to deploy function: {}", e);
+            println!("Failed to deploy service: {}", e);
         }
     }
 }

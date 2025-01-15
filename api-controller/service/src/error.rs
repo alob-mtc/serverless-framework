@@ -35,7 +35,7 @@ impl IntoResponse for Error {
                     "This is on us and we are working on it".to_string(),
                 )
                     .into_response()
-            },
+            }
         }
     }
 }
