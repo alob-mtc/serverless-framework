@@ -1,10 +1,9 @@
 use entity::{
-    auth::ActiveModel,
     function::{ActiveModel as FunctionModel, Model},
     prelude::Function,
 };
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, DbConn, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, DbConn, EntityTrait};
 pub struct FunctionDBRepo;
 
 impl FunctionDBRepo {

@@ -8,8 +8,8 @@ use fn_utils::{extract_zip_from_cursor, find_file_in_path, to_camel_case_handler
 use repository::db_repo::FunctionDBRepo;
 use sea_orm::DatabaseConnection;
 use std::collections::HashMap;
-use std::io::{Cursor, Write};
 use std::fs;
+use std::io::{Cursor, Write};
 
 pub fn create_function(
     name: &str,

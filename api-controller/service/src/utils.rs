@@ -45,7 +45,12 @@ fn convert_axum_headers_to_req_header(headers: HeaderMap) -> ReqwestHeaderMap {
     header_res
 }
 
-fn convert_req_header_to_axum_headers(req_headers: &ReqwestHeaderMap, res_headers: &mut HeaderMap) {
+fn convert_req_header_to_axum_headers(
+    req_headers: &mut ReqwestHeaderMap,
+    res_headers: &mut HeaderMap,
+) {
+    req_headers.remove(http::header::TRANSFER_ENCODING);
+
     for (hn, hv) in req_headers.iter() {
         println!("hn: {} hv: {:?}", hn.to_string(), hv.to_str());
         res_headers.append(hn, hv.clone());
@@ -92,13 +97,13 @@ pub fn make_request(
     match response {
         Ok(res) => {
             let status = convert_status_code(res.status());
-            let req_headers = res.headers().clone();
+            let mut req_headers = res.headers().clone();
             match res.text() {
                 Ok(text) => {
                     let mut response = Response::builder().status(status).body(text).unwrap();
 
                     let headers = response.headers_mut();
-                    convert_req_header_to_axum_headers(&req_headers, headers);
+                    convert_req_header_to_axum_headers(&mut req_headers, headers);
                     response
                 }
                 Err(_) => Response::builder()

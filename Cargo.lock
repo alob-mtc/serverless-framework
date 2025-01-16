@@ -3006,6 +3006,7 @@ dependencies = [
  "docker_wrapper",
  "entity",
  "fn_utils",
+ "http 0.2.11",
  "log",
  "rand",
  "redis",

@@ -35,6 +35,7 @@ TODO:
         - [x] Dynamically create function port
         - [x] Start function If not started
         - [x] Check Is function already started
+        - [ ] Make Function request stream based
 - [x] Create CLI
     - [x] Create function
     - [x] Support environment variables
