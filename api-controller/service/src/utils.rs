@@ -1,9 +1,10 @@
-use axum::http::{HeaderMap, Response, StatusCode as AxumStatusCode, StatusCode};
+use axum::body::Body;
+use axum::http::{HeaderMap, Request as AxumRequest, Response as AxumResponse, StatusCode as AxumStatusCode, StatusCode};
 use axum::response::IntoResponse;
-use reqwest::blocking::Client;
+use hyper::body::to_bytes;
+use reqwest::Client;
 use reqwest::header::HeaderMap as ReqwestHeaderMap;
 use reqwest::StatusCode as ReqwestStatusCode;
-use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -80,44 +81,87 @@ fn create_url(addr: &str, key: &str, query: HashMap<String, String>) -> String {
     url
 }
 
-pub fn make_request(
+pub async fn make_request(
     addr: &str,
     key: &str,
     query: HashMap<String, String>,
     headers: HeaderMap,
-    body: Value,
+    req: AxumRequest<Body>,
 ) -> impl IntoResponse {
     let client = Client::new();
-    let response = client
-        .post(&create_url(addr, key, query))
-        .headers(convert_axum_headers_to_req_header(headers))
-        .json(&body)
-        .send();
+    // Determine which HTTP method the incoming request has
+    let response_result = match req.method() {
+        &http::Method::GET => {
+            client
+                .get(create_url(addr, key, query))
+                .headers(convert_axum_headers_to_req_header(headers))
+                .send()
+                .await
+        }
+        &http::Method::POST => {
+            let body_bytes = match to_bytes(req.into_body()).await {
+                Ok(bytes) => bytes,
+                Err(_) => {
+                    return AxumResponse::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .body("Could not read request body".to_owned())
+                        .unwrap();
+                }
+            };
 
-    match response {
+            client
+                .post(create_url(addr, key, query))
+                .headers(convert_axum_headers_to_req_header(headers))
+                .body(body_bytes)
+                .send()
+                .await
+        }
+        _ => {
+            return AxumResponse::builder()
+                .status(StatusCode::METHOD_NOT_ALLOWED)
+                .body(format!(
+                    "We don't currently support {} functions",
+                    req.method().to_string()
+                ))
+                .unwrap();
+        }
+    };
+
+    // Handle the result of the downstream request
+    let response = match response_result {
         Ok(res) => {
             let status = convert_status_code(res.status());
             let mut req_headers = res.headers().clone();
-            match res.text() {
-                Ok(text) => {
-                    let mut response = Response::builder().status(status).body(text).unwrap();
 
+            // Read downstream response text
+            match res.text().await {
+                Ok(text) => {
+                    let mut response = AxumResponse::builder()
+                        .status(status)
+                        .body(text)
+                        .unwrap();
+
+                    // Convert reqwest response headers back into Axum response headers
                     let headers = response.headers_mut();
                     convert_req_header_to_axum_headers(&mut req_headers, headers);
+
                     response
                 }
-                Err(_) => Response::builder()
+                Err(_) => AxumResponse::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body("Failed to read response".to_string())
+                    .body("Failed to read downstream response".to_owned())
                     .unwrap(),
             }
         }
-        Err(_) => Response::builder()
+        Err(_) => AxumResponse::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .body("Failed to make request".to_string())
+            .body("Failed to make downstream request".to_string())
             .unwrap(),
-    }
+    };
+
+    response
 }
+
 
 pub fn create_fn_files_base(name: &str, _runtime: &str) -> std::io::Result<(PathBuf, File)> {
     let path = Path::new("temp");

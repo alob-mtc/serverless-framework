@@ -1,10 +1,9 @@
 use crate::AppState;
+use axum::body::Body;
 use axum::extract::{Multipart, Path, Query, State};
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::{HeaderMap, Request, StatusCode};
 use axum::response::IntoResponse;
-use axum::Json;
 use futures_util::StreamExt;
-use serde_json::Value;
 use service::{
     deploy_function::deploy_function,
     models::Function,
@@ -45,14 +44,24 @@ pub(crate) async fn call_function(
     Path(key): Path<String>,
     Query(query): Query<HashMap<String, String>>,
     headers: HeaderMap,
-    Json(body): Json<Value>,
+    request: Request<Body>,
 ) -> impl IntoResponse {
-    check_function_status(&state.db_conn, &key).await?;
-    start_function(&mut state.cache_conn, &key)
-        .await
-        .map(|addr| {
-            println!("making request to function: {key}");
-            let res = make_request(&addr, &key, query, headers, body);
-            res
-        })
+    if let Err(e) = check_function_status(&state.db_conn, &key).await {
+        return e.into_response()
+    }
+
+    let addr = match start_function(&mut state.cache_conn, &key).await {
+        Ok(addr) => addr,
+        Err(e) => {
+            // Handle your error (log it, map it to an HTTP status, etc.)
+            eprintln!("Error starting function: {e:?}");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to start function",
+            )
+                .into_response();
+        }
+    };
+    println!("Making request to service: {key}");
+    make_request(&addr, &key, query, headers, request).await.into_response()
 }

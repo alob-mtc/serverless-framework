@@ -2,7 +2,7 @@ use crate::error::Error;
 use crate::models::{Config, Function};
 use crate::utils::{create_fn_files_base, defer_fn, envs_to_string};
 use docker_wrapper::core::provisioning::provisioning;
-use entity::function::Model as FunctionModel;
+use entity::function::{Model as FunctionModel, Model};
 use fn_utils::template::{DOCKERFILE_TEMPLATE, MAIN_TEMPLATE};
 use fn_utils::{extract_zip_from_cursor, find_file_in_path, to_camel_case_handler};
 use repository::db_repo::FunctionDBRepo;
@@ -63,14 +63,21 @@ pub async fn deploy_function(
     // build the function docker image
     provision_docker(&name, envs)?;
 
+
     let function_name = name.clone();
-    let function = FunctionModel {
-        id: 0,
-        auth_id: 0,
-        name,
-        runtime,
-    };
-    FunctionDBRepo::create_function(conn, function).await;
+    match FunctionDBRepo::find_function_by_name(conn, &name).await {
+        None => {
+            let function = FunctionModel {
+                id: 0,
+                auth_id: 0,
+                name,
+                runtime,
+            };
+            FunctionDBRepo::create_function(conn, function).await;
+        }
+        Some(_) => {}
+    }
+
     _ = temp; // remove lint error
     Ok(format!("Function '{}' deployed successfully", function_name).to_string())
 }

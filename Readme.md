@@ -44,4 +44,6 @@ TODO:
     - [x] Support multiple files
     - [x] Support go module system
 - [x] Create a new architecture for the new direction of the project
+- [ ] Optimizations
+  - [ ] Make function deploy concurrent
 - [ ] Create a road map for the project

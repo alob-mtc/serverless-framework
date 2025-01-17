@@ -6,8 +6,6 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.6.20", features = ["macros", "multipart"] }
-serde = { version = "1.0.197", features = ["derive"] }
-serde_json = "1.0.114"
 futures-util = "0.3.30"
 dotenvy = "0.15.7"
 sea-orm = "1.1.4"
@@ -15,4 +13,3 @@ redis = { version = "0.28.1", features = ["tokio-comp"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 migration = { path = "../migration" }
 service = {path = "../service"}
-repository = {path = "../repository"}
