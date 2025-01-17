@@ -3,18 +3,67 @@ pub const MAIN_TEMPLATE: &str = r#"
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+    "context"
+    "log"
+    "net/http"
+    "os"
+    "os/signal"
+    "syscall"
+    "time"
+
+    "github.com/gorilla/mux"
 )
 
 func main() {
-	// Register the "/{{ROUTE}}" endpoint with the helloHandler.
-	http.HandleFunc("/{{ROUTE}}", {{HANDLER}})
+    // 1. Use environment variable or a default for the server port.
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080"
+    }
 
-	// Start the server on port 8080.
-	fmt.Println("Server is running on port 8080...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+    // 2. Create a new router.
+    r := mux.NewRouter()
+
+    // 3. Register endpoints.
+    // Register the "/{{ROUTE}}" endpoint with the {{HANDLER}}.
+	r.HandleFunc("/{{ROUTE}}", {{HANDLER}})
+
+    // 4. Create an HTTP server with timeouts & the router.
+    srv := &http.Server{
+        Addr:         ":" + port,
+        Handler:      r,
+        ReadTimeout:  5 * time.Second,  // protect against slowloris
+        WriteTimeout: 10 * time.Second, // overall request timeout
+        IdleTimeout:  15 * time.Second, // keep-alive time
+    }
+
+    // 5. Start the server in a separate goroutine.
+    go func() {
+        log.Printf("Server is running on port %s...\n", port)
+        if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+            log.Fatalf("Could not listen on %s: %v\n", port, err)
+        }
+    }()
+
+    // 6. Set up channel on which to send signal notifications.
+    stop := make(chan os.Signal, 1)
+    // 7. Notify on interrupt or SIGTERM (Ctrl+C, Docker stop, Kubernetes shutdown, etc.).
+    signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+    // 8. Block until a signal is received.
+    <-stop
+    log.Println("Shutting down the server...")
+
+    // 9. Create a context with a timeout to allow existing connections to finish.
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+
+    // 10. Attempt graceful shutdown.
+    if err := srv.Shutdown(ctx); err != nil {
+        log.Fatalf("Server forced to shutdown: %v", err)
+    }
+
+    log.Println("Server exited gracefully.")
 }
 "#;
 
@@ -25,7 +74,10 @@ import "net/http"
 
 // Handler for the "/{{ROUTE}}" endpoint.
 func {{HANDLER}}(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+    // You can access path variables via mux.Vars(r), query params, etc.
+    // For example: vars := mux.Vars(r)
+    // name := vars["name"]
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Hello World!"))
 }
@@ -46,7 +98,7 @@ COPY ./temp/{{FUNCTION}} .
 RUN go mod init serverless-function
 
 # Download dependencies early to leverage Docker cache
-RUN go mod download
+RUN go mod tidy
 
 # Copy the application source code
 COPY ./temp/{{FUNCTION}} .

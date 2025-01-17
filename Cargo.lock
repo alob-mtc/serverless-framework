@@ -3007,6 +3007,7 @@ dependencies = [
  "entity",
  "fn_utils",
  "http 0.2.11",
+ "hyper 0.14.28",
  "log",
  "rand",
  "redis",

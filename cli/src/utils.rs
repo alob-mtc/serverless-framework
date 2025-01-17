@@ -32,7 +32,7 @@ pub fn create_fn_project_file(name: &str, runtime: &str) -> io::Result<File> {
     fs::create_dir(&path)?;
     create_fn_config(name, runtime)?;
 
-    let routes_file_path = path.join("service.go");
+    let routes_file_path = path.join("function.go");
     let routes_file = File::create(&routes_file_path)?;
 
     Ok(routes_file)

@@ -10,45 +10,45 @@ fn main() {
         .author("Your Name <your.email@example.com>")
         .about("A simple CLI example")
         .subcommand(
-            Command::new("create-service")
-                .about("Creates a new service")
+            Command::new("create-function")
+                .about("Creates a new function")
                 .args([
                     Arg::new("name")
                         .short('n')
                         .long("name")
                         .value_name("NAME")
                         .required(true)
-                        .help("The name of the service to create"),
+                        .help("The name of the function to create"),
                     Arg::new("runtime")
                         .short('r')
                         .default_value("go")
                         .long("runtime")
                         .value_name("RUNTIME")
                         .required(false)
-                        .help("The name of the service to create"),
+                        .help("The name of the function to create"),
                 ]),
         )
         .subcommand(
-            Command::new("deploy-service")
-                .about("Deploys an existing service")
+            Command::new("deploy-function")
+                .about("Deploys an existing function")
                 .arg(
                     Arg::new("name")
                         .short('n')
                         .long("name")
                         .value_name("NAME")
                         .required(false)
-                        .help("The name of the service to deploy"),
+                        .help("The name of the function to deploy"),
                 ),
         )
         .get_matches();
 
     match matches.subcommand() {
-        Some(("create-service", sub_matches)) => {
+        Some(("create-function", sub_matches)) => {
             let name = sub_matches.get_one::<String>("name").unwrap();
             let runtime = sub_matches.get_one::<String>("runtime").unwrap();
             create_new_project(name, runtime);
         }
-        Some(("deploy-service", sub_matches)) => {
+        Some(("deploy-function", sub_matches)) => {
             let name = sub_matches.get_one::<String>("name").unwrap();
             deploy_function(name)
         }
