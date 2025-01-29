@@ -92,16 +92,13 @@ WORKDIR /app
 
 # Copy the specific function package into the container's workspace
 # Replace {{FUNCTION}} with the actual function directory or file
-COPY ./temp/{{FUNCTION}} .
+COPY . .
 
 # Initialize the Go module (if not already initialized)
 RUN go mod init serverless-function
 
 # Download dependencies early to leverage Docker cache
 RUN go mod tidy
-
-# Copy the application source code
-COPY ./temp/{{FUNCTION}} .
 
 # Build the Go app
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .

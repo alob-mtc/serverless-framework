@@ -1,14 +1,17 @@
 use axum::body::Body;
-use axum::http::{HeaderMap, Request as AxumRequest, Response as AxumResponse, StatusCode as AxumStatusCode, StatusCode};
+use axum::http::{
+    HeaderMap, Request as AxumRequest, Response as AxumResponse, StatusCode as AxumStatusCode,
+    StatusCode,
+};
 use axum::response::IntoResponse;
 use hyper::body::to_bytes;
-use reqwest::Client;
 use reqwest::header::HeaderMap as ReqwestHeaderMap;
+use reqwest::Client;
 use reqwest::StatusCode as ReqwestStatusCode;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use urlencoding::encode;
 
 pub struct ScopeCall<F: FnMut()> {
@@ -136,10 +139,7 @@ pub async fn make_request(
             // Read downstream response text
             match res.text().await {
                 Ok(text) => {
-                    let mut response = AxumResponse::builder()
-                        .status(status)
-                        .body(text)
-                        .unwrap();
+                    let mut response = AxumResponse::builder().status(status).body(text).unwrap();
 
                     // Convert reqwest response headers back into Axum response headers
                     let headers = response.headers_mut();
@@ -162,19 +162,7 @@ pub async fn make_request(
     response
 }
 
-
-pub fn create_fn_files_base(name: &str, _runtime: &str) -> std::io::Result<(PathBuf, File)> {
-    let path = Path::new("temp");
-    if path.exists() {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::AlreadyExists,
-            format!("Folder '{}' already exists.", name),
-        ));
-    }
-
-    fs::create_dir(&path)?;
-
-    let path = path.join(name);
+pub fn create_fn_files_base(path: &PathBuf, name: &str, _runtime: &str) -> std::io::Result<File> {
     if path.exists() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::AlreadyExists,
@@ -187,5 +175,5 @@ pub fn create_fn_files_base(name: &str, _runtime: &str) -> std::io::Result<(Path
     let main_file_path = path.join("main.go");
     let main_file = File::create(&main_file_path)?;
 
-    Ok((path, main_file))
+    Ok(main_file)
 }

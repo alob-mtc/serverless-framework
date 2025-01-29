@@ -3,7 +3,7 @@ use entity::{
     prelude::Function,
 };
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, DbConn, EntityTrait, QueryFilter, ColumnTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter};
 
 pub struct FunctionDBRepo;
 
@@ -26,8 +26,8 @@ impl FunctionDBRepo {
             runtime: Set(function.runtime),
             ..Default::default()
         }
-            .save(conn)
-            .await
-            .expect("Failed to create function in DB");
+        .save(conn)
+        .await
+        .expect("Failed to create function in DB");
     }
 }

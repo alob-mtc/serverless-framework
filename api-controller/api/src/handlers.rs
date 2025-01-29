@@ -47,7 +47,7 @@ pub(crate) async fn call_function(
     request: Request<Body>,
 ) -> impl IntoResponse {
     if let Err(e) = check_function_status(&state.db_conn, &key).await {
-        return e.into_response()
+        return e.into_response();
     }
 
     let addr = match start_function(&mut state.cache_conn, &key).await {
@@ -63,5 +63,7 @@ pub(crate) async fn call_function(
         }
     };
     println!("Making request to service: {key}");
-    make_request(&addr, &key, query, headers, request).await.into_response()
+    make_request(&addr, &key, query, headers, request)
+        .await
+        .into_response()
 }

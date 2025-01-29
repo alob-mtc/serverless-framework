@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 zip = "0.5"
+tar = "0.4.43"
