@@ -1,6 +1,7 @@
 use std::fs::{self, File};
 use std::io::{self, Cursor, Write};
 use std::path::{Path, PathBuf};
+use tar::{Builder, Header};
 use zip::write::FileOptions;
 use zip::{ZipArchive, ZipWriter};
 pub mod template;
@@ -44,32 +45,62 @@ pub fn compress_dir_with_excludes(
     let mut zip = ZipWriter::new(dest_zip);
     let options = FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
-    fn add_dir_to_zip<W: Write + io::Seek>(
-        zip: &mut ZipWriter<W>,
-        src_dir: &Path,
-        base_path: &Path,
-        options: FileOptions,
-        excludes: &[&str],
-    ) -> io::Result<()> {
-        for entry in fs::read_dir(src_dir)? {
-            let entry = entry?;
-            let path = entry.path();
-            let name = path.strip_prefix(base_path).unwrap().to_str().unwrap();
-
-            if path.is_dir() {
-                zip.add_directory(name, options)?;
-                add_dir_to_zip(zip, &path, base_path, options, excludes)?;
-            } else if !excludes.contains(&entry.file_name().to_str().unwrap()) {
-                zip.start_file(name, options)?;
-                io::copy(&mut File::open(&path)?, zip)?;
-            }
-        }
-
-        Ok(())
-    }
-
     add_dir_to_zip(&mut zip, src_dir, src_dir, options, excludes)?;
     zip.finish()?;
+
+    Ok(())
+}
+
+fn add_dir_to_zip<W: Write + io::Seek>(
+    zip: &mut ZipWriter<W>,
+    src_dir: &Path,
+    base_path: &Path,
+    options: FileOptions,
+    excludes: &[&str],
+) -> io::Result<()> {
+    for entry in fs::read_dir(src_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        let name = path.strip_prefix(base_path).unwrap().to_str().unwrap();
+
+        if path.is_dir() {
+            zip.add_directory(name, options)?;
+            add_dir_to_zip(zip, &path, base_path, options, excludes)?;
+        } else if !excludes.contains(&entry.file_name().to_str().unwrap()) {
+            zip.start_file(name, options)?;
+            io::copy(&mut File::open(&path)?, zip)?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn add_dir_to_tar<W: Write>(
+    tar: &mut Builder<W>,
+    src_dir: &Path,
+    base_path: &Path,
+    excludes: &[&str],
+) -> io::Result<()> {
+    let tar_name = for entry in fs::read_dir(src_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        let name = path.strip_prefix(base_path).unwrap().to_str().unwrap();
+        if name == "context.tar" {
+            continue;
+        }
+        if path.is_dir() {
+            add_dir_to_tar(tar, &path, base_path, excludes)?;
+        } else if !excludes.contains(&entry.file_name().to_str().unwrap()) {
+            let mut file = File::open(&path)?;
+            let mut header = Header::new_gnu();
+            let metadata = file.metadata()?;
+            header.set_size(metadata.len());
+            header.set_mode(0o644);
+            header.set_cksum();
+
+            tar.append_data(&mut header, name, &mut file)?;
+        }
+    };
 
     Ok(())
 }
@@ -97,7 +128,7 @@ pub fn extract_zip_from_cursor(cursor: Cursor<Vec<u8>>, dest_dir: &PathBuf) -> i
     Ok(())
 }
 
-pub fn find_file_in_path(file_name: &str, path: PathBuf) -> Option<String> {
+pub fn find_file_in_path(file_name: &str, path: &PathBuf) -> Option<String> {
     let dir = fs::read_dir(path).ok()?;
     for entry in dir {
         let entry = entry.ok()?;
