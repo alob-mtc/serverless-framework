@@ -1,6 +1,6 @@
 use crate::error::Error;
 use crate::models::{Config, Function};
-use crate::utils::{create_fn_files_base, defer_fn, envs_to_string};
+use crate::utils::{create_fn_files_base, envs_to_string};
 use docker_wrapper::core::provisioning::provisioning;
 use entity::function::Model as FunctionModel;
 use fn_utils::template::{DOCKERFILE_TEMPLATE, MAIN_TEMPLATE};
@@ -69,11 +69,6 @@ pub async fn deploy_function(
     conn: &DatabaseConnection,
     function: Function,
 ) -> crate::error::Result<String> {
-    let temp = defer_fn(|| {
-        // clean up
-        let _ = fs::remove_dir_all("temp").map_err(|e| Error::SystemError(e.to_string()));
-        let _ = fs::remove_file("Dockerfile").map_err(|e| Error::SystemError(e.to_string()));
-    });
     let name = function.name;
     let runtime = function.runtime;
     let content = function.content;
@@ -95,6 +90,5 @@ pub async fn deploy_function(
         Some(_) => {}
     }
 
-    _ = temp; // remove lint error
     Ok(format!("Function '{}' deployed successfully", function_name).to_string())
 }
