@@ -4,6 +4,7 @@ use fn_utils::{compress_dir_with_excludes, template::ROUTES_TEMPLATE, to_camel_c
 use reqwest::blocking::{multipart, Client};
 use std::fs::File;
 use std::io::{Cursor, Read, Write};
+use std::time::Duration;
 
 pub fn create_new_project(name: &str, runtime: &str) {
     println!("Creating service... '{name}' [RUNTIME:'{runtime}']");
@@ -57,8 +58,13 @@ pub fn deploy_function(name: &str) {
                     .unwrap(),
             );
 
-            let response = Client::new()
-                .post("http://localhost:3000/upload")
+            let client = Client::builder()
+                .timeout(Duration::from_secs(120))
+                .build()
+                .unwrap();
+
+            let response = client
+                .post("http://127.0.0.1:3000/upload")
                 .multipart(form)
                 .send()
                 .unwrap();

@@ -25,6 +25,7 @@ pub async fn start_server() {
 
     // connect to redis
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL is not set in .env file");
+    println!("Starting redis server on {}", redis_url);
     let client = redis::Client::open(redis_url).unwrap();
     let cache_conn = client
         .get_multiplexed_async_connection()

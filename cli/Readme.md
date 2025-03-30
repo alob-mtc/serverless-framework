@@ -54,3 +54,4 @@ Example
 ```sh
 cli deploy-function -n my-function
 ```
+

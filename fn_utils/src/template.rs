@@ -5,6 +5,7 @@ package main
 import (
     "context"
     "log"
+    "net"
     "net/http"
     "os"
     "os/signal"
@@ -37,40 +38,53 @@ func main() {
         IdleTimeout:  15 * time.Second, // keep-alive time
     }
 
-    // 5. Start the server in a separate goroutine.
-    go func() {
-        log.Printf("Server is running on port %s...\n", port)
-        if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-            log.Fatalf("Could not listen on %s: %v\n", port, err)
-        }
-    }()
+    // 5. Create a net.Listener to have more control over incoming connections.
+	listener, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		log.Fatalf("Error starting listener: %v", err)
+	}
 
-    // 6. Set up channel on which to send signal notifications.
-    stop := make(chan os.Signal, 1)
-    // 7. Notify on interrupt or SIGTERM (Ctrl+C, Docker stop, Kubernetes shutdown, etc.).
-    signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	// 6. Start the server in a separate goroutine.
+	go func() {
+		log.Printf("Server is running on port %s...\n", port)
+		if err := srv.Serve(listener); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
 
-    // 8. Block until a signal is received.
-    <-stop
-    log.Println("Shutting down the server...")
+	// 7. Set up channel to receive signal notifications.
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-    // 9. Create a context with a timeout to allow existing connections to finish.
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
+	// 8. Block until a signal is received.
+	<-stop
+	log.Println("Shutting down the server...")
 
-    // 10. Attempt graceful shutdown.
-    if err := srv.Shutdown(ctx); err != nil {
-        log.Fatalf("Server forced to shutdown: %v", err)
-    }
+	// 9. Stop accepting new connections immediately by closing the listener.
+	if err := listener.Close(); err != nil {
+		log.Printf("Error closing listener: %v", err)
+	}
 
-    log.Println("Server exited gracefully.")
+	// 10. Create a context with a timeout to allow active requests to finish.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 11. Attempt a graceful shutdown.
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exited gracefully.")
 }
 "#;
 
 pub const ROUTES_TEMPLATE: &str = r#"
 package main
 
-import "net/http"
+import (
+    "net/http"
+    "github.com/gorilla/mux"
+)
 
 // Handler for the "/{{ROUTE}}" endpoint.
 func {{HANDLER}}(w http.ResponseWriter, r *http.Request) {

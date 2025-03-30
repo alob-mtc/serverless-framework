@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  api-controller:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-controller
+    environment:
+      - DATABASE_URL=postgres://root:root@postgres/serverless
+      - REDIS_URL=redis://redis
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: serverless
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge

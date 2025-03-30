@@ -7,7 +7,7 @@ use clap::{Arg, Command};
 fn main() {
     let matches = Command::new("CLI")
         .version("1.0")
-        .author("Your Name <your.email@example.com>")
+        .author("Akinlua Bolamigbe <bolamigbeakinlua@gmail.com>")
         .about("A simple CLI example")
         .subcommand(
             Command::new("create-function")

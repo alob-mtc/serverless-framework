@@ -43,6 +43,7 @@ TODO:
     - [x] Make sure the function uses the same go version as the docker image
     - [x] Support multiple files
     - [x] Support go module system
+    - [ ] Add a code vetting step before deploying (e.g `go vet`)
 - [x] Create a new architecture for the new direction of the project
 - [ ] Optimizations
   - [x] Make function deploy concurrent

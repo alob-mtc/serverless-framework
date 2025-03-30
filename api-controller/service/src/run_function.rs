@@ -32,7 +32,9 @@ pub async fn start_function(
             match runner(
                 name,
                 &format!("{port}:8080"),
-                Some(Duration::from_secs(timeout)),
+                // This ensures the container is removed 2 seconds
+                // after the function port has been removed from the cache
+                Some(Duration::from_secs(timeout+2)),
             )
             .await
             {

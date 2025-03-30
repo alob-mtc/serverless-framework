@@ -5,6 +5,7 @@ use axum::http::{
 };
 use axum::response::IntoResponse;
 use hyper::body::to_bytes;
+use log::error;
 use reqwest::header::HeaderMap as ReqwestHeaderMap;
 use reqwest::Client;
 use reqwest::StatusCode as ReqwestStatusCode;
@@ -12,6 +13,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
+use std::time::Duration;
 use urlencoding::encode;
 
 pub struct ScopeCall<F: FnMut()> {
@@ -91,7 +93,10 @@ pub async fn make_request(
     headers: HeaderMap,
     req: AxumRequest<Body>,
 ) -> impl IntoResponse {
-    let client = Client::new();
+    let client = Client::builder()
+        .timeout(Duration::from_secs(20))
+        .build()
+        .unwrap();
     // Determine which HTTP method the incoming request has
     let response_result = match req.method() {
         &http::Method::GET => {
@@ -153,10 +158,13 @@ pub async fn make_request(
                     .unwrap(),
             }
         }
-        Err(_) => AxumResponse::builder()
-            .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .body("Failed to make downstream request".to_string())
-            .unwrap(),
+        Err(e) => {
+            error!("Error making downstream request: {:?}", e);
+            AxumResponse::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body("Failed to make downstream request".to_string())
+                .unwrap()
+        }
     };
 
     response
