@@ -5,6 +5,9 @@ This is a simple serverless framework(runtime and cli) that can be used to run s
 
 ![Serverless Architecture](./asset/serverless.png "Architecture")
 
+## Demo
+[Watch Quick Demo](https://youtu.be/qLKV_cO_XhQ?si=4lmvu8frlzH1yLNX)
+
 ## Running
 
 ### API Controller
