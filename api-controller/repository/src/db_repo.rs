@@ -20,12 +20,12 @@ impl FunctionDBRepo {
 
     // Create a new function
     pub async fn create_function(conn: &DbConn, function: Model) {
-        match Auth::find().filter(Column::Id.eq(1)).one(conn).await {
+        match Auth::find().filter(AuthColumn::Id.eq(1)).one(conn).await {
             Ok(v) => {
                 if v.is_none() {
                     AuthModel {
-                        id: Set(1),
                         email: Set("test@gmail.com".to_string()),
+                        password: Set("secret".to_string()),
                         ..Default::default()
                     }
                     .save(conn)
