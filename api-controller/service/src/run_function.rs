@@ -34,7 +34,7 @@ pub async fn start_function(
                 &format!("{port}:8080"),
                 // This ensures the container is removed 2 seconds
                 // after the function port has been removed from the cache
-                Some(Duration::from_secs(timeout+2)),
+                Some(Duration::from_secs(timeout + 2)),
             )
             .await
             {

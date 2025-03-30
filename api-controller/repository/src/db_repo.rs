@@ -1,9 +1,10 @@
 use entity::{
+    auth::{ActiveModel as AuthModel, Column as AuthColumn},
     function::{ActiveModel as FunctionModel, Column, Model},
-    prelude::Function,
+    prelude::{Auth, Function},
 };
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 pub struct FunctionDBRepo;
 
@@ -19,6 +20,24 @@ impl FunctionDBRepo {
 
     // Create a new function
     pub async fn create_function(conn: &DbConn, function: Model) {
+        match Auth::find().filter(Column::Id.eq(1)).one(conn).await {
+            Ok(v) => {
+                if v.is_none() {
+                    AuthModel {
+                        id: Set(1),
+                        email: Set("test@gmail.com".to_string()),
+                        ..Default::default()
+                    }
+                    .save(conn)
+                    .await
+                    .expect("Failed to create auth in DB");
+                }
+            }
+            Err(e) => {
+                println!("Error finding auth: {}", e);
+            }
+        }
+
         // Example: change `auth_id` to something dynamic.
         FunctionModel {
             auth_id: Set(1), // This could come from another data source

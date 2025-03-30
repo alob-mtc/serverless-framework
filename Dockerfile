@@ -23,8 +23,9 @@ RUN apt-get update && apt-get install -y \
     libssl3 \
  && rm -rf /var/lib/apt/lists/*
 
-# (Optional) Create a non-root user for improved security
-RUN useradd -m appuser
+# Create a non-root user 'appuser' and add them to the 'daemon' group.
+# The 'daemon' group typically has GID 1 on many systems.
+RUN useradd -m -G daemon appuser
 
 # Set working directory
 WORKDIR /app

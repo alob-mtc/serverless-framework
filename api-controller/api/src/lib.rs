@@ -25,7 +25,6 @@ pub async fn start_server() {
 
     // connect to redis
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL is not set in .env file");
-    println!("Starting redis server on {}", redis_url);
     let client = redis::Client::open(redis_url).unwrap();
     let cache_conn = client
         .get_multiplexed_async_connection()
@@ -49,7 +48,7 @@ pub async fn start_server() {
         .route("/service/:key", any(call_function))
         .with_state(app_state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     println!("server listening on ... {addr}");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
