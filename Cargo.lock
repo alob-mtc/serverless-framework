@@ -125,6 +125,7 @@ dependencies = [
  "redis",
  "sea-orm",
  "service",
+ "tracing",
  "tracing-subscriber",
 ]
 
@@ -2479,6 +2480,7 @@ dependencies = [
  "entity",
  "redis",
  "sea-orm",
+ "tracing",
 ]
 
 [[package]]
@@ -3000,6 +3002,8 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "thiserror 1.0.69",
+ "tracing",
  "urlencoding",
 ]
 

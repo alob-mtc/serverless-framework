@@ -13,3 +13,4 @@ redis = { version = "0.28.1", features = ["tokio-comp"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 migration = { path = "../migration" }
 service = {path = "../service"}
+tracing = "0.1.41"

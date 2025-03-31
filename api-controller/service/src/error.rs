@@ -2,20 +2,32 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use thiserror::Error;
+use tracing::{debug, error};
 
+/// A custom result type using our defined `Error`.
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug)]
+/// Custom error type for function-related failures.
+///
+/// Variants cover cases such as a function not being registered,
+/// failure to start a function, malformed function input, or
+/// system-level errors.
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("Function not found: {0}")]
     FunctionNotRegistered(String),
+    #[error("Failed to start function: {0}")]
     FunctionFailedToStart(String),
+    #[error("Bad function: {0}")]
     BadFunction(String),
+    #[error("System error: {0}")]
     SystemError(String),
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        println!("--> {:<12} {self:?}", "INTO_RES");
+        debug!("Converting error into response: {:?}", self);
         match self {
             Error::FunctionNotRegistered(f) => {
                 (StatusCode::NOT_FOUND, format!("Function not found: {f}")).into_response()
@@ -29,7 +41,7 @@ impl IntoResponse for Error {
                 (StatusCode::BAD_REQUEST, format!("Bad function: {b}")).into_response()
             }
             Error::SystemError(s) => {
-                log::error!("System error: {s}");
+                error!("System error occurred: {}", s);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "This is on us and we are working on it".to_string(),
@@ -39,11 +51,3 @@ impl IntoResponse for Error {
         }
     }
 }
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
-impl std::error::Error for Error {}

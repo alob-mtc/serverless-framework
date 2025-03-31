@@ -8,3 +8,4 @@ edition = "2021"
 sea-orm = "1.1.4"
 redis = { version = "0.28.1", features = ["tokio-comp"] }
 entity = { path = "../entity" }
+tracing = "0.1.41"
