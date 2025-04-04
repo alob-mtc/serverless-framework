@@ -24,32 +24,36 @@ pub(crate) async fn upload_function(
     state: State<AppState>,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
+    // Get configuration from state
+    let supported_archive_ext = ".zip"; // Currently we only support ZIP
+    let default_runtime = &state.config.function.default_runtime;
+    let max_size = state.config.function.max_function_size;
+
     // Iterate over the fields in the multipart request.
     while let Ok(Some(mut field)) = multipart.next_field().await {
         // Check if the field has a file name.
         if let Some(file_name) = field.file_name() {
             let file_name = file_name.to_owned();
-            // Process only .zip files.
-            if file_name.ends_with(".zip") {
-                let mut buffer = Vec::new();
+            // Process only archive files.
+            if file_name.ends_with(supported_archive_ext) {
                 // Read file content in chunks.
-                while let Some(chunk_result) = field.next().await {
-                    match chunk_result {
-                        Ok(chunk) => buffer.extend_from_slice(&chunk),
-                        Err(e) => {
-                            error!("Error reading file chunk: {}", e);
-                            return (StatusCode::INTERNAL_SERVER_ERROR, "Error reading file")
-                                .into_response();
-                        }
+                let buffer = match read_field_chunks(&mut field, max_size).await {
+                    Ok(buffer) => buffer,
+                    Err(e) => {
+                        error!("Error reading file chunk: {}", e);
+                        return (StatusCode::INTERNAL_SERVER_ERROR, format!("Error reading file: {}", e))
+                            .into_response();
                     }
-                }
+                };
 
-                let function_name = file_name.strip_suffix(".zip").unwrap_or(&file_name);
+                let function_name = file_name
+                    .strip_suffix(supported_archive_ext)
+                    .unwrap_or(&file_name);
                 info!("Received service: {}", function_name);
 
                 let function = Function {
                     name: function_name.to_string(),
-                    runtime: "go".to_string(), // TODO: Consider making runtime configurable.
+                    runtime: default_runtime.clone(),
                     content: buffer,
                 };
 
@@ -59,7 +63,7 @@ pub(crate) async fn upload_function(
                         error!("Error deploying function {}: {}", function_name, e);
                         (
                             StatusCode::INTERNAL_SERVER_ERROR,
-                            "Failed to deploy function",
+                            format!("Failed to deploy function: {}", e),
                         )
                             .into_response()
                     }
@@ -72,6 +76,29 @@ pub(crate) async fn upload_function(
     (StatusCode::BAD_REQUEST, "Unexpected request").into_response()
 }
 
+/// Reads all chunks from a multipart field into a buffer.
+async fn read_field_chunks(
+    field: &mut axum::extract::multipart::Field<'_>, 
+    max_size: usize
+) -> Result<Vec<u8>, String> {
+    let mut buffer = Vec::new();
+    let mut total_size = 0;
+    
+    while let Some(chunk_result) = field.next().await {
+        match chunk_result {
+            Ok(chunk) => {
+                total_size += chunk.len();
+                if total_size > max_size {
+                    return Err(format!("File too large, maximum size is {} bytes", max_size));
+                }
+                buffer.extend_from_slice(&chunk);
+            },
+            Err(e) => return Err(e.to_string()),
+        }
+    }
+    Ok(buffer)
+}
+
 /// Handles calling a function service based on a provided key.
 ///
 /// This endpoint:
@@ -79,7 +106,7 @@ pub(crate) async fn upload_function(
 /// - Starts the function if needed (using a cache connection).
 /// - Forwards the incoming request (including headers and query parameters) to the service.
 ///
-/// Returns the service’s response or an error if any step fails.
+/// Returns the service's response or an error if any step fails.
 pub(crate) async fn call_function(
     mut state: State<AppState>,
     Path(key): Path<String>,
@@ -100,7 +127,7 @@ pub(crate) async fn call_function(
             error!("Error starting function {}: {:?}", key, e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to start function",
+                format!("Failed to start function: {}", e),
             )
                 .into_response();
         }

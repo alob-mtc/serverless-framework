@@ -121,10 +121,12 @@ dependencies = [
  "axum",
  "dotenvy",
  "futures-util",
+ "hyper 0.14.32",
  "migration",
  "redis",
  "sea-orm",
  "service",
+ "thiserror 1.0.69",
  "tracing",
  "tracing-subscriber",
 ]
@@ -697,6 +699,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
