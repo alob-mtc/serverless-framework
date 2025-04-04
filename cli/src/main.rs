@@ -3,6 +3,7 @@ mod utils;
 
 use crate::serverless_function::{create_new_project, deploy_function};
 use clap::{Arg, Command};
+use std::process;
 
 fn main() {
     let matches = Command::new("CLI")
@@ -25,7 +26,7 @@ fn main() {
                         .long("runtime")
                         .value_name("RUNTIME")
                         .required(false)
-                        .help("The name of the function to create"),
+                        .help("The runtime for the function"),
                 ]),
         )
         .subcommand(
@@ -36,7 +37,7 @@ fn main() {
                         .short('n')
                         .long("name")
                         .value_name("NAME")
-                        .required(false)
+                        .required(true)
                         .help("The name of the function to deploy"),
                 ),
         )
@@ -44,14 +45,35 @@ fn main() {
 
     match matches.subcommand() {
         Some(("create-function", sub_matches)) => {
-            let name = sub_matches.get_one::<String>("name").unwrap();
-            let runtime = sub_matches.get_one::<String>("runtime").unwrap();
-            create_new_project(name, runtime);
+            if let Some(name) = sub_matches.get_one::<String>("name") {
+                if let Some(runtime) = sub_matches.get_one::<String>("runtime") {
+                    if let Err(err) = create_new_project(name, runtime) {
+                        eprintln!("Error creating function: {}", err);
+                        process::exit(1);
+                    }
+                } else {
+                    eprintln!("Runtime parameter is required");
+                    process::exit(1);
+                }
+            } else {
+                eprintln!("Name parameter is required");
+                process::exit(1);
+            }
         }
         Some(("deploy-function", sub_matches)) => {
-            let name = sub_matches.get_one::<String>("name").unwrap();
-            deploy_function(name)
+            if let Some(name) = sub_matches.get_one::<String>("name") {
+                if let Err(err) = deploy_function(name) {
+                    eprintln!("Error deploying function: {}", err);
+                    process::exit(1);
+                }
+            } else {
+                eprintln!("Name parameter is required");
+                process::exit(1);
+            }
         }
-        _ => {}
+        _ => {
+            eprintln!("Please use a valid subcommand. Run with --help for more information.");
+            process::exit(1);
+        }
     }
 }

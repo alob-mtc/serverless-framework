@@ -104,14 +104,12 @@ pub async fn runner(
         .await
         .map_err(|e| AppError::System(format!("Failed to attach to container: {e}")))?;
 
-    // Optionally, spawn a task to consume and display container logs.
+    // Spawn a task to handle the container's output.
     spawn(async move {
-        //TODO: confirm if this auto die once container is killed, if not
-        // receive a kill signal for container and stop streaming logs
         while let Some(Ok(log_out)) = output.next().await {
             let bytes = log_out.into_bytes();
             let text = String::from_utf8_lossy(&bytes);
-            // println!("Container STDOUT: <<< {text} >>>");
+            println!("Container STDOUT: >>> {text}");
         }
     });
 
