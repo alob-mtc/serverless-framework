@@ -1,11 +1,14 @@
 use crate::error::Error;
 use crate::models::{Config, Function};
 use crate::utils::{create_fn_files_base, envs_to_string};
+use axum::response::IntoResponse;
 use docker_wrapper::core::provisioning::provisioning;
 use entity::function::Model as FunctionModel;
 use fn_utils::template::{DOCKERFILE_TEMPLATE, MAIN_TEMPLATE};
 use fn_utils::{extract_zip_from_cursor, find_file_in_path, to_camel_case_handler};
-use repository::db_repo::FunctionDBRepo;
+use http::StatusCode;
+use repository::function_repo::FunctionDBRepo;
+use sea_orm::prelude::Uuid;
 use sea_orm::DatabaseConnection;
 use std::collections::HashMap;
 use std::fs;
@@ -131,6 +134,7 @@ pub async fn deploy_function(
     let name = function.name;
     let runtime = function.runtime;
     let content = function.content;
+    let user_uuid = function.user_uuid;
 
     // Create the function files and extract configuration.
     let (envs, path) = create_function(&name, &runtime, content).await?;
@@ -146,13 +150,20 @@ pub async fn deploy_function(
         .await
         .is_none()
     {
-        let new_function = FunctionModel {
-            id: 0,
-            auth_id: 0,
-            name: name.clone(),
+        // Create a function model for the user
+        let model = FunctionModel {
+            name: name.to_string(),
             runtime,
+            ..Default::default()
         };
-        FunctionDBRepo::create_function(conn, new_function).await;
+
+        // Save the function to the database for the authenticated user
+        FunctionDBRepo::create_function_for_user(conn, model, user_uuid)
+            .await
+            .map_err(|e| {
+                error!("Failed to register function in database: {}", e);
+                Error::BadFunction("Failed to register function in database".to_string())
+            })?;
     }
 
     info!("Function '{}' deployed successfully", name);

@@ -2,7 +2,7 @@ use crate::error::Error;
 use crate::utils::random_port;
 use docker_wrapper::core::runner::runner;
 use redis::aio::MultiplexedConnection;
-use repository::{cache_repo::FunctionCacheRepo, db_repo::FunctionDBRepo};
+use repository::{cache_repo::FunctionCacheRepo, function_repo::FunctionDBRepo};
 use sea_orm::DbConn;
 use std::time::Duration;
 use tracing::{error, info};

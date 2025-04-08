@@ -9,3 +9,6 @@ sea-orm = "1.1.4"
 redis = { version = "0.28.1", features = ["tokio-comp"] }
 entity = { path = "../entity" }
 tracing = "0.1.41"
+uuid = { version = "1.7", features = ["serde", "v4"] }
+argon2 = "0.5"
+rand_core = { version = "0.6", features = ["std"] }

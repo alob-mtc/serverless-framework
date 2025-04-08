@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Represents a deployable function.
 ///
@@ -12,6 +13,7 @@ pub struct Function {
     pub name: String,
     pub runtime: String,
     pub content: Vec<u8>,
+    pub user_uuid: Uuid,
 }
 
 /// Represents the configuration for a function.
