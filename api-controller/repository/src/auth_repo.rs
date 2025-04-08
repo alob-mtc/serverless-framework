@@ -3,14 +3,13 @@ use argon2::{
     Argon2,
 };
 use entity::{
-    auth::{ActiveModel as AuthModel, Column as AuthColumn, Entity as Auth, Model as AuthUser},
+    auth::{ActiveModel as AuthModel, Column as AuthColumn, Model as AuthUser},
     prelude::Auth as AuthEntity,
 };
 use rand_core::OsRng;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter,
 };
-use tracing::{error, info};
 use uuid::Uuid;
 
 pub struct AuthDBRepo;
