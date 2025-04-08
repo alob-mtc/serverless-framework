@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "cli",
+    "serverless_core",
+    "runtime",
+    "shared_utils",
+    "db_entities",
+    "db_migrations"
+]

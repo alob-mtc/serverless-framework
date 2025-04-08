@@ -1,0 +1,14 @@
+[package]
+name = "db_entities"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "db_entities"
+path = "src/mod.rs"
+
+
+[dependencies]
+sea-orm = "1.1.4"
+uuid = { version = "1.7", features = ["serde", "v4"] }
