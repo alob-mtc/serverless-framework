@@ -1,4 +1,4 @@
-# Serverless Framework (Proof of Concept)
+# Serverless Framework (poc)
 
 A modern, lightweight, and self-hosted serverless framework that lets you deploy and run functions without managing servers. **This is a proof of concept and not production-ready.**
 
