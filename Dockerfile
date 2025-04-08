@@ -5,14 +5,14 @@ FROM rust:1.85 AS builder
 WORKDIR /usr/src/app
 
 # Now copy the entire workspace source code
-COPY . .
+COPY components .
 
 # Pre-fetch dependencies (improves caching)
 RUN cargo fetch
 
 
-# Build only the "api-controller" package in release mode
-RUN cargo build --release -p api-controller
+# Build only the "serverless_core" package in release mode
+RUN cargo build --release -p serverless_core
 
 # === Stage 2: Create a minimal runtime image ===
 FROM debian:bookworm-slim
@@ -31,11 +31,11 @@ RUN useradd -m -G daemon appuser
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /usr/src/app/target/release/api-controller /usr/local/bin/api-controller
+COPY --from=builder /usr/src/app/target/release/serverless_core /usr/local/bin/serverless_core
 COPY --from=builder /usr/src/app/.env ./
 
 # Ensure the binary is executable
-RUN chmod +x /usr/local/bin/api-controller
+RUN chmod +x /usr/local/bin/serverless_core
 
 # Switch to non-root user
 USER appuser
@@ -52,4 +52,4 @@ EXPOSE 3000
 # ---
 
 # Start the API application
-CMD ["api-controller"]
+CMD ["serverless_core"]
