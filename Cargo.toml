@@ -1,7 +1,0 @@
-[workspace]
-members = [
-    "cli",
-    "api-controller",
-    "docker_wrapper",
-    "fn_utils"
-]
