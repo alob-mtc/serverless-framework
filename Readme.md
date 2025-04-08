@@ -158,7 +158,7 @@ We welcome contributions to enhance this proof of concept! Here are some areas w
    - Rust toolchain
    - Docker and Docker Compose
    - PostgreSQL and Redis (or use Docker Compose)
-3. Copy `.env.example` to `.env` and configure your environmen
+3. Copy `.env.example` to `.env` and configure your environment
    ```sh
    make env
    ```
