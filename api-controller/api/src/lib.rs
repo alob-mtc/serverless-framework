@@ -1,33 +1,41 @@
+mod auth_handlers;
 mod config;
-mod handlers;
+mod function_handlers;
+mod middleware;
 
 use crate::config::ConfigError;
+use auth_handlers::{login, register};
 use axum::{
-    extract::FromRef,
-    routing::{any, post},
+    body::Body,
+    extract::{FromRef, Path, Query},
+    http::{HeaderMap, Request},
+    routing::{any, get, post},
     Router,
 };
+use function_handlers::{call_function, list_functions, upload_function_authenticated};
 use futures_util::stream::StreamExt;
-use handlers::{call_function, upload_function};
 use migration::{Migrator, MigratorTrait};
 use redis::{aio::MultiplexedConnection, AsyncCommands};
 use sea_orm::{Database, DatabaseConnection};
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use thiserror::Error;
 use tracing::{error, info};
 
 // Re-export the config module
 pub use config::AppConfig;
+// Re-export the middleware module
+pub use middleware::AuthenticatedUser;
 
 /// Application state shared across handlers.
 #[derive(Clone, FromRef)]
 pub struct AppState {
     /// Database connection for persisting data.
-    db_conn: DatabaseConnection,
+    pub db_conn: DatabaseConnection,
     /// Redis connection for caching.
-    cache_conn: MultiplexedConnection,
+    pub cache_conn: MultiplexedConnection,
     /// Application configuration
-    config: AppConfig,
+    pub config: AppConfig,
 }
 
 /// Custom error type for server initialization.
@@ -86,9 +94,16 @@ pub async fn start_server() -> Result<(), ServerError> {
         config: config.clone(),
     };
 
+    // Create a router with all our routes
     let app = Router::new()
-        .route("/upload", post(upload_function))
-        .route("/service/:key", any(call_function))
+        // Auth routes
+        .route("/auth/register", post(register))
+        .route("/auth/login", post(login))
+        // Function management routes
+        .route("/functions", get(list_functions))
+        .route("/functions/upload", post(upload_function_authenticated))
+        // Function invocation routes
+        .route("/service/:function_name", any(call_function))
         .with_state(app_state);
 
     // Build socket address from configuration

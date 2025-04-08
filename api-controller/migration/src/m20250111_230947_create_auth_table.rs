@@ -14,12 +14,31 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(Auth::Id))
                     .col(string(Auth::Email))
                     .col(string(Auth::Password))
+                    .col(uuid(Auth::Uuid))
+                    .to_owned(),
+            )
+            .await?;
+
+        // Create a unique index on email
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-auth-email-unique")
+                    .table(Auth::Table)
+                    .col(Auth::Email)
+                    .unique()
                     .to_owned(),
             )
             .await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Drop index first
+        manager
+            .drop_index(Index::drop().name("idx-auth-email-unique").to_owned())
+            .await?;
+
+        // Then drop table
         manager
             .drop_table(Table::drop().table(Auth::Table).to_owned())
             .await
@@ -32,4 +51,5 @@ pub(crate) enum Auth {
     Id,
     Email,
     Password,
+    Uuid,
 }

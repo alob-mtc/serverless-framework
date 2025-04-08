@@ -1,9 +1,12 @@
 use crate::AppState;
+use crate::AuthenticatedUser;
 use axum::body::Body;
 use axum::extract::{Multipart, Path, Query, State};
-use axum::http::{HeaderMap, Request, StatusCode};
+use axum::http::{header, HeaderMap, Request, StatusCode};
 use axum::response::IntoResponse;
+use entity::function::Model as FunctionModel;
 use futures_util::stream::StreamExt;
+use repository::function_repo::FunctionDBRepo;
 use service::{
     deploy_function::deploy_function,
     models::Function,
@@ -12,16 +15,18 @@ use service::{
 };
 use std::collections::HashMap;
 use tracing::{error, info};
+use uuid::Uuid;
 
-/// Handles uploading a function as a ZIP file.
+/// Handles uploading a function as a ZIP file with authentication.
 ///
-/// This endpoint expects a multipart request with one or more files.
+/// This endpoint expects a multipart request with one or more files and an Authorization header.
 /// If a file with a name ending in ".zip" is found, it reads its content
-/// and deploys the function.
+/// and deploys the function for the authenticated user.
 ///
 /// Returns an HTTP response indicating success or an appropriate error.
-pub(crate) async fn upload_function(
-    state: State<AppState>,
+pub(crate) async fn upload_function_authenticated(
+    State(state): State<AppState>,
+    AuthenticatedUser(user_uuid): AuthenticatedUser,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
     // Get configuration from state
@@ -41,7 +46,10 @@ pub(crate) async fn upload_function(
                     Ok(buffer) => buffer,
                     Err(e) => {
                         error!("Error reading file chunk: {}", e);
-                        return (StatusCode::INTERNAL_SERVER_ERROR, format!("Error reading file: {}", e))
+                        return (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            format!("Error reading file: {}", e),
+                        )
                             .into_response();
                     }
                 };
@@ -55,10 +63,19 @@ pub(crate) async fn upload_function(
                     name: function_name.to_string(),
                     runtime: default_runtime.clone(),
                     content: buffer,
+                    user_uuid,
                 };
 
+                // Deploy the function
                 return match deploy_function(&state.db_conn, function).await {
-                    Ok(res) => (StatusCode::OK, res).into_response(),
+                    Ok(res) => (
+                        StatusCode::OK,
+                        format!(
+                            "{}\nFunction: {}\nUser UUID: {}",
+                            res, function_name, user_uuid
+                        ),
+                    )
+                        .into_response(),
                     Err(e) => {
                         error!("Error deploying function {}: {}", function_name, e);
                         (
@@ -76,23 +93,59 @@ pub(crate) async fn upload_function(
     (StatusCode::BAD_REQUEST, "Unexpected request").into_response()
 }
 
+/// List functions for an authenticated user
+pub(crate) async fn list_functions(
+    State(state): State<AppState>,
+    AuthenticatedUser(user_uuid): AuthenticatedUser,
+) -> impl IntoResponse {
+    // Get functions for this user
+    match FunctionDBRepo::find_functions_by_user_uuid(&state.db_conn, user_uuid).await {
+        Ok(functions) => {
+            // Convert to a simpler representation
+            let function_list = functions
+                .into_iter()
+                .map(|f| {
+                    serde_json::json!({
+                        "uuid": f.uuid.to_string(),
+                        "name": f.name,
+                        "runtime": f.runtime
+                    })
+                })
+                .collect::<Vec<_>>();
+
+            (StatusCode::OK, axum::Json(function_list)).into_response()
+        }
+        Err(e) => {
+            error!("Error listing functions: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Error listing functions: {}", e),
+            )
+                .into_response()
+        }
+    }
+}
+
 /// Reads all chunks from a multipart field into a buffer.
 async fn read_field_chunks(
-    field: &mut axum::extract::multipart::Field<'_>, 
-    max_size: usize
+    field: &mut axum::extract::multipart::Field<'_>,
+    max_size: usize,
 ) -> Result<Vec<u8>, String> {
     let mut buffer = Vec::new();
     let mut total_size = 0;
-    
+
     while let Some(chunk_result) = field.next().await {
         match chunk_result {
             Ok(chunk) => {
                 total_size += chunk.len();
                 if total_size > max_size {
-                    return Err(format!("File too large, maximum size is {} bytes", max_size));
+                    return Err(format!(
+                        "File too large, maximum size is {} bytes",
+                        max_size
+                    ));
                 }
                 buffer.extend_from_slice(&chunk);
-            },
+            }
             Err(e) => return Err(e.to_string()),
         }
     }

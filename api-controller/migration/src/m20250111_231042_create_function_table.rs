@@ -15,6 +15,7 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(Function::Id))
                     .col(string(Function::Name))
                     .col(string(Function::Runtime).default("go"))
+                    .col(uuid(Function::Uuid))
                     .col(integer(Function::AuthId))
                     .foreign_key(
                         ForeignKey::create()
@@ -26,10 +27,34 @@ impl MigrationTrait for Migration {
                     )
                     .to_owned(),
             )
+            .await?;
+
+        // Create a unique index on name and auth_id combination
+        // This prevents the same user from creating two functions with the same name
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-function-name-auth-unique")
+                    .table(Function::Table)
+                    .col(Function::Name)
+                    .col(Function::AuthId)
+                    .unique()
+                    .to_owned(),
+            )
             .await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Drop index first
+        manager
+            .drop_index(
+                Index::drop()
+                    .name("idx-function-name-auth-unique")
+                    .to_owned(),
+            )
+            .await?;
+
+        // Then drop table
         manager
             .drop_table(Table::drop().table(Function::Table).to_owned())
             .await
@@ -43,4 +68,5 @@ enum Function {
     Name,
     Runtime,
     AuthId,
+    Uuid,
 }

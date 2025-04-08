@@ -1,7 +1,10 @@
 // use crate::template::ROUTES_TEMPLATE;
+use crate::auth::{load_session, AuthError};
 use crate::utils::{create_fn_project_file, init_go_mod, GlobalConfig};
 use fn_utils::{compress_dir_with_excludes, template::ROUTES_TEMPLATE, to_camel_case_handler};
 use reqwest::blocking::{multipart, Client};
+use reqwest::header::{self, HeaderMap, HeaderValue};
+use serde_json::Value;
 use std::fs::File;
 use std::io::{self, Cursor, Read, Write};
 use std::path::Path;
@@ -9,7 +12,8 @@ use std::time::Duration;
 use thiserror::Error;
 
 // Constants
-const API_ENDPOINT: &str = "http://127.0.0.1:3000/upload";
+const API_ENDPOINT_UPLOAD_FUNCTION: &str = "http://127.0.0.1:3000/functions/upload";
+const API_ENDPOINT_LIST_FUNCTION: &str = "http://127.0.0.1:3000/functions";
 const REQUEST_TIMEOUT_SECS: u64 = 120;
 const CONFIG_FILE_PATH: &str = "./config.json";
 
@@ -30,6 +34,9 @@ pub enum FunctionError {
 
     #[error("Compression error: {0}")]
     CompressionError(String),
+
+    #[error("Authentication error: {0}")]
+    AuthError(#[from] AuthError),
 }
 
 /// Creates a new serverless function project with the specified name and runtime.
@@ -65,7 +72,71 @@ pub fn create_new_project(name: &str, runtime: &str) -> Result<(), FunctionError
     Ok(())
 }
 
-/// Deploys an existing function to the serverless platform.
+/// List all functions
+pub fn list_functions() -> Result<(), FunctionError> {
+    // Load authentication session
+    let session = load_session()?;
+
+    // Set up authorization headers
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::AUTHORIZATION,
+        HeaderValue::from_str(&format!("Bearer {}", session.token))
+            .map_err(|_| FunctionError::CompressionError("Invalid token format".to_string()))?,
+    );
+
+    // Build client with timeout
+    let client = Client::builder()
+        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+        .default_headers(headers)
+        .build()?;
+
+    // Send request to API
+    let response = client.get(API_ENDPOINT_LIST_FUNCTION).send()?;
+
+    // Check the response
+    if response.status().is_success() {
+        let response_text = response.text()?;
+        let functions: Vec<Value> = serde_json::from_str(&response_text)?;
+
+        if functions.is_empty() {
+            println!("No functions found.");
+            return Ok(());
+        }
+
+        // Print table header
+        println!("+--------------------------------------+----------------------+---------+");
+        println!("| UUID                                 | Name                 | Runtime |");
+        println!("+--------------------------------------+----------------------+---------+");
+
+        // Print each function as a table row
+        for function in functions {
+            let uuid = function["uuid"].as_str().unwrap_or("N/A");
+            let name = function["name"].as_str().unwrap_or("N/A");
+            let runtime = function["runtime"].as_str().unwrap_or("N/A");
+
+            // Format the row with proper alignment
+            println!("| {:<36} | {:<20} | {:<7} |", uuid, name, runtime);
+        }
+
+        // Print table footer
+        println!("+--------------------------------------+----------------------+---------+");
+
+        Ok(())
+    } else {
+        let status = response.status();
+        let error_text = response
+            .text()
+            .unwrap_or_else(|_| "Unknown error".to_string());
+
+        Err(FunctionError::CompressionError(format!(
+            "API error: Status code {}. {}",
+            status, error_text
+        )))
+    }
+}
+
+/// Deploys an existing function to the serverless platform using authentication.
 ///
 /// # Arguments
 ///
@@ -98,6 +169,17 @@ pub fn deploy_function(name: &str) -> Result<(), FunctionError> {
     // Reset the cursor to the beginning of the buffer
     dest_zip.set_position(0);
 
+    // Try authenticated deployment first
+    deploy_with_auth(name, dest_zip)?;
+
+    Ok(())
+}
+
+/// Deploy a function using authentication
+fn deploy_with_auth(name: &str, dest_zip: Cursor<Vec<u8>>) -> Result<String, FunctionError> {
+    // Load authentication session
+    let session = load_session()?;
+
     // Create multipart form
     let form = multipart::Form::new().part(
         "file",
@@ -106,32 +188,39 @@ pub fn deploy_function(name: &str) -> Result<(), FunctionError> {
             .mime_str("application/zip")?,
     );
 
+    // Set up authorization headers
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::AUTHORIZATION,
+        HeaderValue::from_str(&format!("Bearer {}", session.token))
+            .map_err(|_| FunctionError::CompressionError("Invalid token format".to_string()))?,
+    );
+
     // Build client with timeout
     let client = Client::builder()
         .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+        .default_headers(headers)
         .build()?;
 
     // Send request to API
-    let response = client.post(API_ENDPOINT).multipart(form).send()?;
+    let response = client
+        .post(API_ENDPOINT_UPLOAD_FUNCTION)
+        .multipart(form)
+        .send()?;
 
     // Check the response
     if response.status().is_success() {
         let response_text = response.text()?;
-        println!("Response: {}", response_text);
-        Ok(())
+        Ok(response_text)
     } else {
         let status = response.status();
         let error_text = response
             .text()
             .unwrap_or_else(|_| "Unknown error".to_string());
-        println!(
-            "Failed to upload file: Status: {}, Error: {}",
-            status, error_text
-        );
-        // Create a custom error message
+
         Err(FunctionError::CompressionError(format!(
-            "API error: Status code {}",
-            status
+            "API error: Status code {}. {}",
+            status, error_text
         )))
     }
 }
