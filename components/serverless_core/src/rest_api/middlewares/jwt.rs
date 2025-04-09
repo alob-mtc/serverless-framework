@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     backend::db::auth::AuthDBRepo,
-    rest_api::{services::auth::validate_token, AppState},
+    rest_api::{handlers::auth::validate_token, AppState},
 };
 
 /// Extractor for authenticated user UUID

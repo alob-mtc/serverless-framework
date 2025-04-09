@@ -1,5 +1,5 @@
+mod handlers;
 mod middlewares;
-mod services;
 
 use axum::{
     extract::FromRef,
@@ -8,16 +8,17 @@ use axum::{
 };
 use db_migrations::{Migrator, MigratorTrait};
 
-use redis::aio::MultiplexedConnection;
-use sea_orm::{Database, DatabaseConnection};
-use services::{
+use handlers::{
     auth::{login, register},
-    config::{AppConfig, ConfigError},
     functions::{call_function, list_functions, upload_function_authenticated},
 };
+use redis::aio::MultiplexedConnection;
+use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;
 use thiserror::Error;
 use tracing::{error, info};
+
+use crate::config::{AppConfig, ConfigError};
 
 /// Application state shared across handlers.
 #[derive(Clone, FromRef)]
