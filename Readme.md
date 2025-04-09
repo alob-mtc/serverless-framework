@@ -2,7 +2,7 @@
 
 A modern, lightweight, and self-hosted serverless framework that lets you deploy and run functions without managing servers. **This is a proof of concept and not production-ready.**
 
-![Serverless Architecture](./asset/serverless.png "Architecture")
+![Serverless Architecture](./assets/serverless.png "Architecture")
 
 ## What is This Project?
 
@@ -113,20 +113,16 @@ Functions run in isolated Docker containers with:
 - **Dependency Management**: Functions include all their dependencies
 - **Runtime Support**: Currently supports Go with more runtimes planned
 
-## Project Structure
+## Project Structure (core Components)
 
 ```
-serverless/
-├── api-controller/       # Core runtime engine
-│   ├── api/              # HTTP API implementation with Axum
-│   ├── entity/           # Database entity definitions
-│   ├── migration/        # Database migrations
-│   ├── repository/       # Database access layer
-│   └── service/          # Business logic services
+components/
+├── serverless_core/      # Core runtime engine and business logic
 ├── cli/                  # Command-line interface tool
-├── fn_utils/             # Shared function utilities
-├── docker_wrapper/       # Docker container management
-└── asset/                # Documentation assets
+├── db_migrations/        # Database migrations
+├── db_entities/          # Database entity definitions
+├── shared_tils/          # Shared function utilities
+├── runtime/              # Docker container management
 ```
 
 ## Authentication Flow
