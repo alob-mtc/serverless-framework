@@ -8,7 +8,7 @@ A modern, lightweight, and self-hosted serverless framework that lets you deploy
 
 This serverless framework is a proof of concept for building, deploying, and managing serverless functions in a performant and secure way. It demonstrates:
 
-- **API Controller**: A core runtime that handles function invocation, deployment, and lifecycle management
+- **Serverless Core**: A core runtime that handles function invocation, deployment, and lifecycle management
 - **Command-line Interface (CLI)**: A tool for creating, deploying, and managing serverless functions
 - **Authentication System**: User management for controlled access to serverless resources
 
@@ -40,7 +40,7 @@ This project is currently in **proof of concept** stage. While it demonstrates t
 - Docker and Docker Compose
 - Rust toolchain (for building the CLI)
 
-### Running the API Controller
+### Running the Serverless Core
 
 ```sh
 # Clone the repository
@@ -51,7 +51,7 @@ cd serverless
 docker-compose up -d
 
 # Or run directly with Cargo
-cargo run -p api-controller
+cargo run -p serverless_core
 ```
 
 ### Installing the CLI
@@ -62,7 +62,7 @@ cd cli
 cargo build --release
 
 # Optional: Move the binary to your PATH
-cp target/release/cli /usr/local/bin/serverless-cli
+cp target/release/serverless-cli /usr/local/bin
 ```
 
 ### Creating and Deploying Your First Function
@@ -86,9 +86,9 @@ serverless-cli list
 
 ## Key Components
 
-### API Controller
+### Serverless Core
 
-The API Controller is the heart of the serverless framework:
+The Serverless Core is the heart of the serverless framework:
 
 - **Function Management**: Deploys, starts, and manages function lifecycles
 - **Request Routing**: Routes incoming requests to the appropriate function

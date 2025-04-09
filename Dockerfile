@@ -31,11 +31,11 @@ RUN useradd -m -G daemon appuser
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /usr/src/app/target/release/serverless_core /usr/local/bin/serverless_core
+COPY --from=builder /usr/src/app/target/release/serverless-core /usr/local/bin
 COPY --from=builder /usr/src/app/.env ./
 
 # Ensure the binary is executable
-RUN chmod +x /usr/local/bin/serverless_core
+RUN chmod +x /usr/local/bin/serverless-core
 
 # Switch to non-root user
 USER appuser
@@ -52,4 +52,4 @@ EXPOSE 3000
 # ---
 
 # Start the API application
-CMD ["serverless_core"]
+CMD ["serverless-core"]
