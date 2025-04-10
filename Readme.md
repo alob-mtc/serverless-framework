@@ -121,8 +121,7 @@ components/
 ├── cli/                  # Command-line interface tool
 ├── db_migrations/        # Database migrations
 ├── db_entities/          # Database entity definitions
-├── shared_tils/          # Shared function utilities
-├── runtime/              # Docker container management
+├── shared_utils/         # Shared function utilities
 ```
 
 ## Authentication Flow
