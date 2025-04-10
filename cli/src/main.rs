@@ -1,4 +1,5 @@
 mod auth;
+mod host_manager;
 mod serverless_function;
 mod utils;
 
