@@ -5,7 +5,7 @@ FROM rust:1.85 AS builder
 WORKDIR /usr/src/app
 
 # Now copy the entire workspace source code
-COPY components .
+COPY . .
 
 # Pre-fetch dependencies (improves caching)
 RUN cargo fetch
