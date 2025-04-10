@@ -47,7 +47,7 @@ This project is currently in **proof of concept** stage. While it demonstrates t
 git clone https://github.com/yourusername/serverless.git
 cd serverless
 
-# Start the API controller and dependencies with Docker Compose
+# Start the Serverless Core and dependencies with Docker Compose
 docker-compose up -d
 
 # Or run directly with Cargo
@@ -101,7 +101,7 @@ The Serverless Core is the heart of the serverless framework:
 The CLI offers a streamlined developer experience:
 
 - **Function Creation**: Generate function templates and scaffolding
-- **Deployment**: Package and upload functions to the API controller
+- **Deployment**: Package and upload functions to the Serverless Core
 - **Authentication**: Secure user management with login/registration
 - **Function Listing**: View all deployed functions in a clean table format
 
@@ -116,12 +116,13 @@ Functions run in isolated Docker containers with:
 ## Project Structure (core Components)
 
 ```
-components/
+serverless_framework/
 ├── serverless_core/      # Core runtime engine and business logic
 ├── cli/                  # Command-line interface tool
 ├── db_migrations/        # Database migrations
 ├── db_entities/          # Database entity definitions
 ├── shared_utils/         # Shared function utilities
+├── assets/               # Project assets
 ```
 
 ## Authentication Flow
@@ -129,7 +130,7 @@ components/
 The framework uses JWT-based authentication:
 
 1. Users register or login through the CLI
-2. The API controller validates credentials and issues a JWT token
+2. The Serverless Core validates credentials and issues a JWT token
 3. The CLI stores the token locally for future requests
 4. Functions are deployed and managed with authenticated requests
 
@@ -159,12 +160,12 @@ We welcome contributions to enhance this proof of concept! Here are some areas w
    ```
 4. Run database migrations:
    ```sh
-   cd api-controller/migration
+   cd db_migrations
    cargo run
    ```
-5. Start the API controller:
+5. Start the Serverless Core:
    ```sh
-   cargo run -p api-controller
+   cargo run -p serverless_core
    ```
 
 ### Technical Architecture Details
