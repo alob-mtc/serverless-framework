@@ -1,5 +1,6 @@
 // use crate::template::ROUTES_TEMPLATE;
 use crate::auth::{load_session, AuthError};
+use crate::host_manager;
 use crate::utils::{create_fn_project_file, init_go_mod, GlobalConfig};
 use reqwest::blocking::{multipart, Client};
 use reqwest::header::{self, HeaderMap, HeaderValue};
@@ -12,8 +13,6 @@ use std::time::Duration;
 use thiserror::Error;
 
 // Constants
-const API_ENDPOINT_UPLOAD_FUNCTION: &str = "http://127.0.0.1:3000/functions/upload";
-const API_ENDPOINT_LIST_FUNCTION: &str = "http://127.0.0.1:3000/functions";
 const REQUEST_TIMEOUT_SECS: u64 = 120;
 const CONFIG_FILE_PATH: &str = "./config.json";
 
@@ -92,7 +91,7 @@ pub fn list_functions() -> Result<(), FunctionError> {
         .build()?;
 
     // Send request to API
-    let response = client.get(API_ENDPOINT_LIST_FUNCTION).send()?;
+    let response = client.get(host_manager::function_list_url()).send()?;
 
     // Check the response
     if response.status().is_success() {
@@ -204,7 +203,7 @@ fn deploy_with_auth(name: &str, dest_zip: Cursor<Vec<u8>>) -> Result<String, Fun
 
     // Send request to API
     let response = client
-        .post(API_ENDPOINT_UPLOAD_FUNCTION)
+        .post(host_manager::function_upload_url())
         .multipart(form)
         .send()?;
 

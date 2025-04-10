@@ -1,3 +1,4 @@
+use crate::host_manager;
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -8,7 +9,6 @@ use thiserror::Error;
 // File to store auth token
 const AUTH_FILE: &str = ".serverless-cli-auth";
 // Auth API endpoints
-const AUTH_LOGIN_URL: &str = "http://127.0.0.1:3000/auth/login";
 const AUTH_REGISTER_URL: &str = "http://127.0.0.1:3000/auth/register";
 
 /// Authentication errors
@@ -73,7 +73,10 @@ pub fn register(email: &str, password: &str) -> Result<AuthSession, AuthError> {
         password: password.to_string(),
     };
 
-    let response = client.post(AUTH_REGISTER_URL).json(&credentials).send()?;
+    let response = client
+        .post(host_manager::auth_register_url())
+        .json(&credentials)
+        .send()?;
 
     if !response.status().is_success() {
         let error_text = response.text()?;
@@ -111,7 +114,10 @@ pub fn login(email: &str, password: &str) -> Result<AuthSession, AuthError> {
         password: password.to_string(),
     };
 
-    let response = client.post(AUTH_LOGIN_URL).json(&credentials).send()?;
+    let response = client
+        .post(host_manager::auth_login_url())
+        .json(&credentials)
+        .send()?;
 
     if !response.status().is_success() {
         let error_text = response.text()?;
