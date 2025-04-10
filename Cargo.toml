@@ -1,7 +1,9 @@
 [workspace]
 members = [
     "cli",
-    "api-controller",
-    "docker_wrapper",
-    "fn_utils"
+    "serverless_core",
+    "runtime",
+    "shared_utils",
+    "db_entities",
+    "db_migrations"
 ]

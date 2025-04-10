@@ -2,13 +2,13 @@
 
 A modern, lightweight, and self-hosted serverless framework that lets you deploy and run functions without managing servers. **This is a proof of concept and not production-ready.**
 
-![Serverless Architecture](./asset/serverless.png "Architecture")
+![Serverless Architecture](./assets/serverless.png "Architecture")
 
 ## What is This Project?
 
 This serverless framework is a proof of concept for building, deploying, and managing serverless functions in a performant and secure way. It demonstrates:
 
-- **API Controller**: A core runtime that handles function invocation, deployment, and lifecycle management
+- **Serverless Core**: A core runtime that handles function invocation, deployment, and lifecycle management
 - **Command-line Interface (CLI)**: A tool for creating, deploying, and managing serverless functions
 - **Authentication System**: User management for controlled access to serverless resources
 
@@ -40,18 +40,18 @@ This project is currently in **proof of concept** stage. While it demonstrates t
 - Docker and Docker Compose
 - Rust toolchain (for building the CLI)
 
-### Running the API Controller
+### Running the Serverless Core
 
 ```sh
 # Clone the repository
 git clone https://github.com/yourusername/serverless.git
 cd serverless
 
-# Start the API controller and dependencies with Docker Compose
+# Start the Serverless Core and dependencies with Docker Compose
 docker-compose up -d
 
 # Or run directly with Cargo
-cargo run -p api-controller
+cargo run -p serverless_core
 ```
 
 ### Installing the CLI
@@ -62,7 +62,7 @@ cd cli
 cargo build --release
 
 # Optional: Move the binary to your PATH
-cp target/release/cli /usr/local/bin/serverless-cli
+cp target/release/serverless-cli /usr/local/bin
 ```
 
 ### Creating and Deploying Your First Function
@@ -86,9 +86,9 @@ serverless-cli list
 
 ## Key Components
 
-### API Controller
+### Serverless Core
 
-The API Controller is the heart of the serverless framework:
+The Serverless Core is the heart of the serverless framework:
 
 - **Function Management**: Deploys, starts, and manages function lifecycles
 - **Request Routing**: Routes incoming requests to the appropriate function
@@ -101,7 +101,7 @@ The API Controller is the heart of the serverless framework:
 The CLI offers a streamlined developer experience:
 
 - **Function Creation**: Generate function templates and scaffolding
-- **Deployment**: Package and upload functions to the API controller
+- **Deployment**: Package and upload functions to the Serverless Core
 - **Authentication**: Secure user management with login/registration
 - **Function Listing**: View all deployed functions in a clean table format
 
@@ -113,20 +113,16 @@ Functions run in isolated Docker containers with:
 - **Dependency Management**: Functions include all their dependencies
 - **Runtime Support**: Currently supports Go with more runtimes planned
 
-## Project Structure
+## Project Structure (core Components)
 
 ```
-serverless/
-├── api-controller/       # Core runtime engine
-│   ├── api/              # HTTP API implementation with Axum
-│   ├── entity/           # Database entity definitions
-│   ├── migration/        # Database migrations
-│   ├── repository/       # Database access layer
-│   └── service/          # Business logic services
+serverless_framework/
+├── serverless_core/      # Core runtime engine and business logic
 ├── cli/                  # Command-line interface tool
-├── fn_utils/             # Shared function utilities
-├── docker_wrapper/       # Docker container management
-└── asset/                # Documentation assets
+├── db_migrations/        # Database migrations
+├── db_entities/          # Database entity definitions
+├── shared_utils/         # Shared function utilities
+├── assets/               # Project assets
 ```
 
 ## Authentication Flow
@@ -134,7 +130,7 @@ serverless/
 The framework uses JWT-based authentication:
 
 1. Users register or login through the CLI
-2. The API controller validates credentials and issues a JWT token
+2. The Serverless Core validates credentials and issues a JWT token
 3. The CLI stores the token locally for future requests
 4. Functions are deployed and managed with authenticated requests
 
@@ -164,12 +160,12 @@ We welcome contributions to enhance this proof of concept! Here are some areas w
    ```
 4. Run database migrations:
    ```sh
-   cd api-controller/migration
+   cd db_migrations
    cargo run
    ```
-5. Start the API controller:
+5. Start the Serverless Core:
    ```sh
-   cargo run -p api-controller
+   cargo run -p serverless_core
    ```
 
 ### Technical Architecture Details
