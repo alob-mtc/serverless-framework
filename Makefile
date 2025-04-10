@@ -1,3 +1,5 @@
+env:
+	@ [ -e .env ] || cp -v .env.example .env
 migrate:
 	sea-orm-cli migrate up -n $(n)
 migrate-down:
