@@ -9,7 +9,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{error, info};
 use uuid::Uuid;
 
-use crate::{backend::db::auth::AuthDBRepo, rest_api::AppState};
+use crate::api_controller::AppState;
+use crate::db::auth::AuthDBRepo;
 
 // JWT secret key - in production, this should be loaded from an environment variable
 const JWT_SECRET: &[u8] = b"your-secret-key-here";

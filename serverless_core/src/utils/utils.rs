@@ -16,7 +16,6 @@ use std::time::Duration;
 use tracing::{debug, error, warn};
 use urlencoding::encode;
 
-pub mod error;
 /// A RAII guard that runs a closure when dropped.
 ///
 /// This is useful for deferring code until the scope exits.

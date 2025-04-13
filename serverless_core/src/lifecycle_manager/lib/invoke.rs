@@ -1,7 +1,7 @@
-use crate::backend::db::cache::FunctionCacheRepo;
-use crate::backend::db::function::FunctionDBRepo;
-use crate::backend::utils::error::{ServelessCoreError, ServelessCoreResult};
-use crate::backend::utils::random_port;
+use crate::db::cache::FunctionCacheRepo;
+use crate::db::function::FunctionDBRepo;
+use crate::utils::utils::random_port;
+use crate::lifecycle_manager::lib::error::{ServelessCoreError, ServelessCoreResult};
 use redis::aio::MultiplexedConnection;
 use runtime::core::runner::runner;
 use sea_orm::DatabaseConnection;

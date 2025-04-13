@@ -9,10 +9,10 @@ use std::io::{Cursor, Write};
 use std::path::PathBuf;
 use tracing::{error, info};
 
-use crate::backend::db::function::FunctionDBRepo;
-use crate::backend::db::models::{DeployableFunction, DeployableFunctionConfig};
-use crate::backend::utils::error::{ServelessCoreError, ServelessCoreResult};
-use crate::backend::utils::{create_fn_files_base, envs_to_string};
+use crate::db::function::FunctionDBRepo;
+use crate::db::models::{DeployableFunction, DeployableFunctionConfig};
+use crate::lifecycle_manager::lib::error::{ServelessCoreError, ServelessCoreResult};
+use crate::utils::utils::{create_fn_files_base, envs_to_string};
 
 /// Creates a function file structure and extracts its configuration.
 ///

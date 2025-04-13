@@ -1,3 +1,4 @@
+mod config;
 mod handlers;
 mod middlewares;
 
@@ -8,17 +9,16 @@ use axum::{
 };
 use db_migrations::{Migrator, MigratorTrait};
 
+use config::{AppConfig, ConfigError};
 use handlers::{
     auth::{login, register},
-    functions::{call_function, list_functions, upload_function_authenticated},
+    functions::{call_function, list_functions, upload_function},
 };
 use redis::aio::MultiplexedConnection;
 use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;
 use thiserror::Error;
 use tracing::{error, info};
-
-use crate::config::{AppConfig, ConfigError};
 
 /// Application state shared across handlers.
 #[derive(Clone, FromRef)]
@@ -94,7 +94,7 @@ pub async fn start_server() -> Result<(), ServerError> {
         .route("/auth/login", post(login))
         // Function management routes
         .route("/functions", get(list_functions))
-        .route("/functions/upload", post(upload_function_authenticated))
+        .route("/functions/upload", post(upload_function))
         // Function invocation routes
         .route("/service/:function_name", any(call_function))
         .with_state(app_state);

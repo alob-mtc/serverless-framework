@@ -3,17 +3,17 @@ use axum::extract::{Multipart, Path, Query, State};
 use axum::http::{HeaderMap, Request, StatusCode};
 use axum::response::IntoResponse;
 
-use crate::backend::db::function::FunctionDBRepo;
-use crate::backend::db::models::DeployableFunction;
-use crate::backend::services::deploy::deploy_function;
-use crate::backend::services::run::{check_function_status, start_function};
-use crate::backend::utils::make_request;
+use crate::db::function::FunctionDBRepo;
+use crate::db::models::DeployableFunction;
+use crate::utils::utils::make_request;
+use crate::lifecycle_manager::lib::deploy::deploy_function;
+use crate::lifecycle_manager::lib::invoke::{check_function_status, start_function};
 use futures_util::stream::StreamExt;
 use std::collections::HashMap;
 use tracing::{error, info};
 
-use crate::rest_api::middlewares::jwt::AuthenticatedUser;
-use crate::rest_api::AppState;
+use crate::api_controller::middlewares::jwt::AuthenticatedUser;
+use crate::api_controller::AppState;
 
 /// Handles uploading a function as a ZIP file with authentication.
 ///
@@ -22,7 +22,7 @@ use crate::rest_api::AppState;
 /// and deploys the function for the authenticated user.
 ///
 /// Returns an HTTP response indicating success or an appropriate error.
-pub(crate) async fn upload_function_authenticated(
+pub(crate) async fn upload_function(
     State(state): State<AppState>,
     AuthenticatedUser(user_uuid): AuthenticatedUser,
     mut multipart: Multipart,
