@@ -198,7 +198,7 @@ This project is licensed under the [LICENSE](LICENSE) file in the repository.
 
 [Watch Quick Demo](https://youtu.be/qLKV_cO_XhQ?si=4lmvu8frlzH1yLNX)
 
-A demo function running on a self-hosted enviroment here [invoke-demo-home-page](https://freeserverless.com/service/home-page), function code [here](https://github.com/alob-mtc/invok-home-page)
+A demo function running on a self-hosted enviroment here [invoke-demo-home-page](https://freeserverless.com/service/home-page), function code [here](https://github.com/alob-mtc/invok-functions)
 
 Feel free to play around with the host here:
 [serverless-framework-host](https://freeserverless.com)
