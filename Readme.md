@@ -189,7 +189,7 @@ We welcome contributions to enhance this proof of concept! Here are some areas w
 - [ ] Security audit and hardening
 - [ ] Performance optimization and load testing
 - [ ] CI/CD pipeline for automated testing
-- [ ] More...
+- [ ] More... (feel free to add to this list)
 
 ## License
 
