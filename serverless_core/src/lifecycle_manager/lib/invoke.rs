@@ -1,12 +1,13 @@
 use crate::db::cache::FunctionCacheRepo;
 use crate::db::function::FunctionDBRepo;
-use crate::utils::utils::random_port;
 use crate::lifecycle_manager::lib::error::{ServelessCoreError, ServelessCoreResult};
+use crate::utils::utils::random_port;
 use redis::aio::MultiplexedConnection;
 use runtime::core::runner::runner;
 use sea_orm::DatabaseConnection;
 use std::time::Duration;
 use tracing::{error, info};
+use uuid::Uuid;
 
 /// Checks if a function is registered in the database.
 ///
@@ -20,8 +21,9 @@ use tracing::{error, info};
 pub async fn check_function_status(
     conn: &DatabaseConnection,
     name: &str,
+    user_uuid: Uuid,
 ) -> ServelessCoreResult<()> {
-    let function = FunctionDBRepo::find_function_by_name(conn, name).await;
+    let function = FunctionDBRepo::find_function_by_name(conn, name, user_uuid).await;
     if function.is_none() {
         error!("Function '{}' not registered", name);
         return Err(ServelessCoreError::FunctionNotRegistered(name.to_string()));
@@ -48,9 +50,11 @@ pub async fn check_function_status(
 pub async fn start_function(
     cache_conn: &mut MultiplexedConnection,
     name: &str,
+    user_uuid: Uuid,
 ) -> ServelessCoreResult<String> {
     // Check if the function is already running.
-    if let Some(addr) = FunctionCacheRepo::get_function(cache_conn, name).await {
+    let name = format!("{name}-{user_uuid}");
+    if let Some(addr) = FunctionCacheRepo::get_function(cache_conn, &name).await {
         info!("Function '{}' already running at: {}", name, addr);
         return Ok(addr);
     }
@@ -62,7 +66,7 @@ pub async fn start_function(
 
     // Attempt to run the function container with a timeout slightly longer than the cache TTL.
     match runner(
-        name,
+        &name,
         &format!("{port}:8080"),
         Some(Duration::from_secs(timeout + 2)),
     )
@@ -74,7 +78,7 @@ pub async fn start_function(
         }
         Ok(_) => {
             // Register the function in the cache.
-            let _ = FunctionCacheRepo::add_function(cache_conn, name, &addr, timeout).await;
+            let _ = FunctionCacheRepo::add_function(cache_conn, &name, &addr, timeout).await;
             info!("Function '{}' started at: {}", name, addr);
             Ok(addr)
         }
