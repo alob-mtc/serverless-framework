@@ -53,8 +53,8 @@ pub async fn start_function(
     user_uuid: Uuid,
 ) -> ServelessCoreResult<String> {
     // Check if the function is already running.
-    let name = format!("{name}-{user_uuid}");
-    if let Some(addr) = FunctionCacheRepo::get_function(cache_conn, &name).await {
+    let function_name = format!("{name}-{user_uuid}");
+    if let Some(addr) = FunctionCacheRepo::get_function(cache_conn, &function_name).await {
         info!("Function '{}' already running at: {}", name, addr);
         return Ok(addr);
     }
@@ -66,19 +66,20 @@ pub async fn start_function(
 
     // Attempt to run the function container with a timeout slightly longer than the cache TTL.
     match runner(
-        &name,
+        &function_name,
         &format!("{port}:8080"),
         Some(Duration::from_secs(timeout + 2)),
     )
     .await
     {
         Err(e) => {
-            error!("Error starting function '{}': {:?}", name, e);
+            error!("Error starting function '{}': {:?}", function_name, e);
             Err(ServelessCoreError::FunctionFailedToStart(name.to_string()))
         }
         Ok(_) => {
             // Register the function in the cache.
-            let _ = FunctionCacheRepo::add_function(cache_conn, &name, &addr, timeout).await;
+            let _ =
+                FunctionCacheRepo::add_function(cache_conn, &function_name, &addr, timeout).await;
             info!("Function '{}' started at: {}", name, addr);
             Ok(addr)
         }
