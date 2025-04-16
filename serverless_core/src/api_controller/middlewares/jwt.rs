@@ -9,8 +9,8 @@ use tracing::error;
 use uuid::Uuid;
 
 use crate::{
-    db::auth::AuthDBRepo,
     api_controller::{handlers::auth::validate_token, AppState},
+    db::auth::AuthDBRepo,
 };
 
 /// Extractor for authenticated user UUID
