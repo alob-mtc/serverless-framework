@@ -105,7 +105,7 @@ pub fn add_dir_to_tar<W: Write>(
     Ok(())
 }
 
-pub fn extract_zip_from_cursor(cursor: Cursor<Vec<u8>>, dest_dir: &PathBuf) -> io::Result<()> {
+pub fn extract_zip_from_cursor(cursor: Cursor<Vec<u8>>, dest_dir: &Path) -> io::Result<()> {
     let mut archive = ZipArchive::new(cursor)?;
 
     for i in 0..archive.len() {

@@ -6,7 +6,7 @@ use futures_util::StreamExt;
 use shared_utils;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::Path;
 use tar::Builder as TarBuilder;
 
 /// Creates a tar archive (in a temp directory) containing the provided Dockerfile content.
@@ -18,7 +18,7 @@ use tar::Builder as TarBuilder;
 /// # Returns
 /// * On success, returns `Body` where `Body` is the tar'd build context,
 /// * On failure, returns an `AppError`.
-fn create_build_context(path: &PathBuf, dockerfile_content: &str) -> AppResult<Vec<u8>> {
+fn create_build_context(path: &Path, dockerfile_content: &str) -> AppResult<Vec<u8>> {
     // Write the Dockerfile content into that directory.
     let dockerfile_path = path.join("Dockerfile");
     {
@@ -56,7 +56,7 @@ fn create_build_context(path: &PathBuf, dockerfile_content: &str) -> AppResult<V
 /// * `Ok(())` if the image build succeeds.
 /// * `AppError` if there's a problem connecting to Docker or building the image.
 pub async fn provisioning(
-    path: &PathBuf,
+    path: &Path,
     runner_type: &str,
     dockerfile_content: &str,
 ) -> AppResult<()> {

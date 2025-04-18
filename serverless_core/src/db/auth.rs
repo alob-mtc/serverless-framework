@@ -33,10 +33,10 @@ impl AuthDBRepo {
         password: String,
     ) -> Result<AuthUser, DbErr> {
         // Check if user with this email already exists
-        if let Some(_) = AuthEntity::find()
+        if AuthEntity::find()
             .filter(AuthColumn::Email.eq(&email))
             .one(conn)
-            .await?
+            .await?.is_some()
         {
             return Err(DbErr::Custom("Email already registered".to_string()));
         }
@@ -53,7 +53,7 @@ impl AuthDBRepo {
         };
 
         // Save the user to the database
-        Ok(user.insert(conn).await?)
+        user.insert(conn).await
     }
 
     /// Login a user with the provided email and password
