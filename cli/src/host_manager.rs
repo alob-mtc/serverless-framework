@@ -1,4 +1,4 @@
-/**
+/*!
 This module serves as the base for host management for the CLI.
 - Handles injecting the correct host at build time.
 */

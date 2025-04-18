@@ -162,7 +162,7 @@ pub fn deploy_function(name: &str) -> Result<(), FunctionError> {
 
     // Create ZIP archive
     let mut dest_zip = Cursor::new(Vec::new());
-    compress_dir_with_excludes(&Path::new(name), &mut dest_zip, &["go.mod", "go.sum"])
+    compress_dir_with_excludes(Path::new(name), &mut dest_zip, &["go.mod", "go.sum"])
         .map_err(|e| FunctionError::CompressionError(e.to_string()))?;
 
     // Reset the cursor to the beginning of the buffer
