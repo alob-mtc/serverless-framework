@@ -17,6 +17,7 @@ uuid = { version = "1.7", features = ["serde", "v4"] }
 argon2 = "0.5"
 rand_core = { version = "0.6", features = ["std"] }
 axum = { version = "0.6.20", features = ["macros", "multipart"] }
+tower-http = { version = "0.4.0", features = ["cors"] }
 futures-util = "0.3.30"
 dotenvy = "0.15.7"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
