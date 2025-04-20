@@ -15,4 +15,3 @@ pub fn timeout(timeout: Duration) -> (mpsc::Receiver<()>, Box<dyn FnOnce()>) {
 
     (rx, tiger)
 }
-

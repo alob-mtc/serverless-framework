@@ -7,10 +7,8 @@ use axum::{
     routing::{any, get, post},
     Router,
 };
-use db_migrations::{Migrator, MigratorTrait};
-use tower_http::cors::{Any, CorsLayer};
-
 use config::{AppConfig, ConfigError};
+use db_migrations::{Migrator, MigratorTrait};
 use handlers::{
     auth::{login, register},
     functions::{call_function, list_functions, upload_function},
@@ -89,12 +87,6 @@ pub async fn start_server() -> Result<(), ServerError> {
         config: config.clone(),
     };
 
-    // Configure CORS
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-
     // Create a router with all our routes
     let app = Router::new()
         // Auth routes
@@ -105,7 +97,6 @@ pub async fn start_server() -> Result<(), ServerError> {
         .route("/functions/upload", post(upload_function))
         // Function invocation routes
         .route("/service/:function_name", any(call_function))
-        .layer(cors)
         .with_state(app_state);
 
     // Build socket address from configuration

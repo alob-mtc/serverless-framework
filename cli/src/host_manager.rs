@@ -4,7 +4,7 @@ This module serves as the base for host management for the CLI.
 */
 
 /// HOST_BASE is the base URL for the API server
-const HOST_BASE: &str = "http://127.0.0.1:3000";
+const HOST_BASE: &str = "https://freeserverless.com";
 
 /// Generates the URL for the login endpoint
 pub fn auth_login_url() -> String {

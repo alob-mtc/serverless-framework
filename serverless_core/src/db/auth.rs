@@ -36,7 +36,8 @@ impl AuthDBRepo {
         if AuthEntity::find()
             .filter(AuthColumn::Email.eq(&email))
             .one(conn)
-            .await?.is_some()
+            .await?
+            .is_some()
         {
             return Err(DbErr::Custom("Email already registered".to_string()));
         }

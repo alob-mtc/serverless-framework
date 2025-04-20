@@ -5,9 +5,9 @@ use axum::response::IntoResponse;
 
 use crate::db::function::FunctionDBRepo;
 use crate::db::models::DeployableFunction;
-use crate::utils::utils::make_request;
 use crate::lifecycle_manager::lib::deploy::deploy_function;
 use crate::lifecycle_manager::lib::invoke::{check_function_status, start_function};
+use crate::utils::utils::make_request;
 use futures_util::stream::StreamExt;
 use std::collections::HashMap;
 use tracing::{error, info};
