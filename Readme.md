@@ -2,6 +2,8 @@
 
 A modern, lightweight, and self-hosted serverless framework that lets you deploy and run functions without managing servers. **This is a proof of concept and not production-ready.**
 
+Try it now in your browser: [Invok Online Playground](https://freeserverless.com/functions/29e2d84f-7a0e-42dd-8b70-a7d7c7c04199/invoke/invok-ide)
+
 ![Serverless Architecture](./assets/serverless.png "Architecture")
 
 ## What is This Project?
@@ -37,8 +39,16 @@ This project is currently in **proof of concept** stage. While it demonstrates t
 
 ## Quick Start
 
+### Online Playground (No Installation Required)
+
+The fastest way to get started is to use our web-based playground:
+[Invok Online Playground](https://freeserverless.com/functions/29e2d84f-7a0e-42dd-8b70-a7d7c7c04199/invoke/invok-ide)
+
+This allows you to create, deploy, and test serverless functions directly in your browser without any setup.
+
 ### Prerequisites
 
+For local development and deployment:
 - Docker and Docker Compose
 - Rust toolchain (for building the CLI)
 
@@ -219,6 +229,17 @@ This project is licensed under the [LICENSE](LICENSE) file in the repository.
 [Watch Quick Demo](https://youtu.be/qLKV_cO_XhQ?si=4lmvu8frlzH1yLNX)
 
 A demo function running on a self-hosted enviroment here [invoke-demo-home-page](https://freeserverless.com/functions/29e2d84f-7a0e-42dd-8b70-a7d7c7c04199/invoke/home-page), function code [here](https://github.com/alob-mtc/invok-functions)
+
+### Interactive Playground
+
+Try out the serverless framework without installing anything using our web-based playground:
+[Invok Playground](https://freeserverless.com/functions/29e2d84f-7a0e-42dd-8b70-a7d7c7c04199/invoke/invok-ide)
+
+The playground allows you to:
+- Create serverless functions directly in your browser
+- Deploy functions instantly
+- Test your functions with real-time execution
+- Experiment with the framework's capabilities
 
 Feel free to play around with the host here:
 [serverless-framework-host](https://freeserverless.com)
