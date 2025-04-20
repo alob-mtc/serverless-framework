@@ -29,7 +29,7 @@ pub fn create_fn_project_file(name: &str, runtime: &str) -> io::Result<File> {
         ));
     }
 
-    fs::create_dir(&path)?;
+    fs::create_dir(path)?;
     create_fn_config(name, runtime)?;
 
     let routes_file_path = path.join("function.go");
@@ -61,7 +61,7 @@ fn create_global_config_file(name: &str, runtime: &str) -> io::Result<()> {
         }
         content.function_name.push(name.to_string());
         let mut f = File::create("./config.json")?;
-        return f.write_all(serde_json::to_string(&content)?.as_bytes());
+        f.write_all(serde_json::to_string(&content)?.as_bytes())
     } else {
         let mut f = File::create("./config.json")?;
         let config = GlobalConfig {

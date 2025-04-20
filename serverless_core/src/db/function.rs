@@ -37,24 +37,6 @@ impl FunctionDBRepo {
             .ok()?
     }
 
-    /// Finds a function by its UUID in the database.
-    ///
-    /// # Arguments
-    ///
-    /// * `conn` - A reference to the database connection.
-    /// * `uuid` - The UUID of the function to find.
-    ///
-    /// # Returns
-    ///
-    /// * `Some(Model)` if the function exists; otherwise, `None`.
-    pub async fn find_function_by_uuid(conn: &DbConn, uuid: Uuid) -> Option<Model> {
-        Function::find()
-            .filter(Column::Uuid.eq(uuid))
-            .one(conn)
-            .await
-            .ok()?
-    }
-
     /// Finds functions by user's UUID in the database.
     ///
     /// # Arguments
@@ -121,6 +103,6 @@ impl FunctionDBRepo {
         };
 
         // Insert and return the created function
-        Ok(function_model.insert(conn).await?)
+        function_model.insert(conn).await
     }
 }

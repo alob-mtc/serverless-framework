@@ -7,13 +7,13 @@ use axum::{
     routing::{any, get, post},
     Router,
 };
-use db_migrations::{Migrator, MigratorTrait};
-
 use config::{AppConfig, ConfigError};
+use db_migrations::{Migrator, MigratorTrait};
 use handlers::{
     auth::{login, register},
     functions::{call_function, list_functions, upload_function},
 };
+use hyper::http;
 use redis::aio::MultiplexedConnection;
 use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;

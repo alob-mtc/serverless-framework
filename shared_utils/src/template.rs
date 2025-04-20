@@ -118,7 +118,7 @@ RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 # Stage 2: Runtime Stage
-FROM alpine:latest
+FROM gcr.io/distroless/static-debian12
 
 # Set the working directory inside the container
 WORKDIR /app

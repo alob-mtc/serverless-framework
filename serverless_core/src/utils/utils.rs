@@ -156,15 +156,15 @@ pub async fn make_request(
         .expect("Failed to build HTTP client");
 
     // Choose the appropriate client method based on the request method.
-    let response_result = match req.method() {
-        &http::Method::GET => {
+    let response_result = match *req.method() {
+        http::Method::GET => {
             client
                 .get(create_url(addr, key, query))
                 .headers(convert_axum_headers_to_req_header(headers))
                 .send()
                 .await
         }
-        &http::Method::POST => {
+        http::Method::POST => {
             let body_bytes = match to_bytes(req.into_body()).await {
                 Ok(bytes) => bytes,
                 Err(err) => {
@@ -188,7 +188,7 @@ pub async fn make_request(
                 .status(StatusCode::METHOD_NOT_ALLOWED)
                 .body(format!(
                     "We don't currently support {} functions",
-                    req.method().to_string()
+                    req.method()
                 ))
                 .unwrap();
         }
@@ -251,7 +251,7 @@ pub fn create_fn_files_base(path: &PathBuf, name: &str, _runtime: &str) -> std::
         ));
     }
 
-    fs::create_dir(&path)?;
+    fs::create_dir(path)?;
 
     let main_file_path = path.join("main.go");
     let main_file = File::create(&main_file_path)?;

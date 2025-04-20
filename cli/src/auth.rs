@@ -8,8 +8,6 @@ use thiserror::Error;
 
 // File to store auth token
 const AUTH_FILE: &str = ".serverless-cli-auth";
-// Auth API endpoints
-const AUTH_REGISTER_URL: &str = "http://127.0.0.1:3000/auth/register";
 
 /// Authentication errors
 #[derive(Debug, Error)]
@@ -172,11 +170,6 @@ pub fn load_session() -> Result<AuthSession, AuthError> {
 fn get_auth_file_path() -> std::path::PathBuf {
     let home_dir = dirs::home_dir().unwrap_or_else(|| Path::new(".").to_path_buf());
     home_dir.join(AUTH_FILE)
-}
-
-/// Check if user is logged in
-pub fn is_logged_in() -> bool {
-    load_session().is_ok()
 }
 
 /// Logout (remove saved session)
