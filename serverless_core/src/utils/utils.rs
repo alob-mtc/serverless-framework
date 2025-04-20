@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tracing::{debug, error, warn};
 use urlencoding::encode;
+use uuid::Uuid;
 
 /// A RAII guard that runs a closure when dropped.
 ///
@@ -256,4 +257,11 @@ pub fn create_fn_files_base(path: &PathBuf, name: &str, _runtime: &str) -> std::
     let main_file = File::create(&main_file_path)?;
 
     Ok(main_file)
+}
+
+pub fn generate_hash(source: Uuid) -> String {
+    let uuid_hash = format!("{:x}", md5::compute(source.to_string()));
+    let uuid_short = &uuid_hash[0..20]; // Use first 20 characters
+
+    uuid_short.to_string()
 }

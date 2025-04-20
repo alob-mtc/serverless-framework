@@ -3,6 +3,8 @@ use axum::extract::{Multipart, Path, Query, State};
 use axum::http::{HeaderMap, Request, StatusCode};
 use axum::response::IntoResponse;
 
+use crate::api_controller::middlewares::jwt::AuthenticatedUser;
+use crate::api_controller::AppState;
 use crate::db::function::FunctionDBRepo;
 use crate::db::models::DeployableFunction;
 use crate::lifecycle_manager::lib::deploy::deploy_function;
@@ -11,9 +13,7 @@ use crate::utils::utils::make_request;
 use futures_util::stream::StreamExt;
 use std::collections::HashMap;
 use tracing::{error, info};
-
-use crate::api_controller::middlewares::jwt::AuthenticatedUser;
-use crate::api_controller::AppState;
+use uuid::Uuid;
 
 /// Handles uploading a function as a ZIP file with authentication.
 ///
@@ -153,29 +153,62 @@ async fn read_field_chunks(
 /// Handles calling a function service based on a provided key.
 ///
 /// This endpoint:
-/// - Checks the function status in the database.
+/// - Checks if the function exists in the user's namespace.
 /// - Starts the function if needed (using a cache connection).
 /// - Forwards the incoming request (including headers and query parameters) to the service.
 ///
-/// Returns the service's response or an error if any step fails.
+/// # Parameters
+///
+/// * `namespace` - The user's UUID serving as a namespace for their functions
+/// * `function_name` - The name of the function to invoke
+///
+/// # Returns
+///
+/// The service's response or an error if any step fails.
 pub(crate) async fn call_function(
     mut state: State<AppState>,
-    Path(key): Path<String>,
+    Path((namespace, function_name)): Path<(String, String)>,
     Query(query): Query<HashMap<String, String>>,
     headers: HeaderMap,
     request: Request<Body>,
 ) -> impl IntoResponse {
-    // Verify the function is in a valid state.
-    if let Err(e) = check_function_status(&state.db_conn, &key).await {
-        error!("Function status check failed for {}: {}", key, e);
+    // Parse and validate namespace UUID
+    let user_uuid = match namespace.parse() {
+        Ok(uuid) => uuid,
+        Err(e) => {
+            error!(
+                namespace = %namespace,
+                error = %e,
+                "Invalid function namespace"
+            );
+            return (
+                StatusCode::BAD_REQUEST,
+                format!("Invalid function namespace: {}", e),
+            )
+                .into_response();
+        }
+    };
+
+    if let Err(e) = check_function_status(&state.db_conn, &function_name, user_uuid).await {
+        error!(
+            namespace = %namespace,
+            function = %function_name,
+            error = %e,
+            "Function status check failed"
+        );
         return e.into_response();
     }
 
     // Attempt to start the function using the cache connection.
-    let addr = match start_function(&mut state.cache_conn, &key).await {
+    let addr = match start_function(&mut state.cache_conn, &function_name, user_uuid).await {
         Ok(addr) => addr,
         Err(e) => {
-            error!("Error starting function {}: {:?}", key, e);
+            error!(
+                namespace = %namespace,
+                function = %function_name,
+                error = ?e,
+                "Error starting function"
+            );
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to start function: {}", e),
@@ -184,9 +217,9 @@ pub(crate) async fn call_function(
         }
     };
 
-    info!("Making request to service: {}", key);
+    info!(namespace = %namespace, function = %function_name, "Making request to service");
     // Forward the request to the service and return its response.
-    make_request(&addr, &key, query, headers, request)
+    make_request(&addr, &function_name, query, headers, request)
         .await
         .into_response()
 }
