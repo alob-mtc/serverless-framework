@@ -1,7 +1,8 @@
 use crate::db::cache::FunctionCacheRepo;
 use crate::db::function::FunctionDBRepo;
 use crate::lifecycle_manager::lib::error::{ServelessCoreError, ServelessCoreResult};
-use crate::utils::utils::random_port;
+use crate::utils::utils::{generate_hash, random_port};
+use md5;
 use redis::aio::MultiplexedConnection;
 use runtime::core::runner::runner;
 use sea_orm::DatabaseConnection;
@@ -18,6 +19,7 @@ use uuid::Uuid;
 ///
 /// * `conn` - A reference to the database connection.
 /// * `name` - The name of the function to check.
+/// * `user_uuid` - The UUID of the user (namespace) to verify function ownership.
 pub async fn check_function_status(
     conn: &DatabaseConnection,
     name: &str,
@@ -25,8 +27,11 @@ pub async fn check_function_status(
 ) -> ServelessCoreResult<()> {
     let function = FunctionDBRepo::find_function_by_name(conn, name, user_uuid).await;
     if function.is_none() {
-        error!("Function '{}' not registered", name);
-        return Err(ServelessCoreError::FunctionNotRegistered(name.to_string()));
+        error!("Function '{}' not found in namespace '{}'", name, user_uuid);
+        return Err(ServelessCoreError::FunctionNotRegistered(format!(
+            "Function '{}' not found in namespace '{}'",
+            name, user_uuid
+        )));
     }
     Ok(())
 }
@@ -42,6 +47,7 @@ pub async fn check_function_status(
 ///
 /// * `cache_conn` - A mutable reference to the Redis multiplexed connection.
 /// * `name` - The name of the function to start.
+/// * `user_uuid` - The UUID of the user (namespace) who owns this function.
 ///
 /// # Returns
 ///
@@ -52,10 +58,18 @@ pub async fn start_function(
     name: &str,
     user_uuid: Uuid,
 ) -> ServelessCoreResult<String> {
+    // Generate a shorter hash of the UUID for better container names
+    let uuid_short = generate_hash(user_uuid);
+
+    // Create a unique function name based on function name and user's UUID hash
+    let function_key = format!("{name}-{uuid_short}");
+
     // Check if the function is already running.
-    let function_name = format!("{name}-{user_uuid}");
-    if let Some(addr) = FunctionCacheRepo::get_function(cache_conn, &function_name).await {
-        info!("Function '{}' already running at: {}", name, addr);
+    if let Some(addr) = FunctionCacheRepo::get_function(cache_conn, &function_key).await {
+        info!(
+            "Function '{}' for user '{}' already running at: {}",
+            name, user_uuid, addr
+        );
         return Ok(addr);
     }
 
@@ -66,21 +80,27 @@ pub async fn start_function(
 
     // Attempt to run the function container with a timeout slightly longer than the cache TTL.
     match runner(
-        &function_name,
+        &function_key,
         &format!("{port}:8080"),
         Some(Duration::from_secs(timeout + 2)),
     )
     .await
     {
         Err(e) => {
-            error!("Error starting function '{}': {:?}", function_name, e);
+            error!(
+                "Error starting function '{}' for user '{}': {:?}",
+                name, user_uuid, e
+            );
             Err(ServelessCoreError::FunctionFailedToStart(name.to_string()))
         }
         Ok(_) => {
             // Register the function in the cache.
             let _ =
-                FunctionCacheRepo::add_function(cache_conn, &function_name, &addr, timeout).await;
-            info!("Function '{}' started at: {}", name, addr);
+                FunctionCacheRepo::add_function(cache_conn, &function_key, &addr, timeout).await;
+            info!(
+                "Function '{}' for user '{}' started at: {}",
+                name, user_uuid, addr
+            );
             Ok(addr)
         }
     }

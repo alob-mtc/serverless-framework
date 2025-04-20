@@ -97,7 +97,7 @@ pub async fn start_server() -> Result<(), ServerError> {
         .route("/functions/upload", post(upload_function))
         // Function invocation routes
         .route(
-            "/functions/:name_space/invok/:function_name",
+            "/functions/:namespace/invoke/:function_name",
             any(call_function),
         )
         .with_state(app_state);

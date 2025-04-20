@@ -12,7 +12,7 @@ use tracing::{error, info};
 use crate::db::function::FunctionDBRepo;
 use crate::db::models::{DeployableFunction, DeployableFunctionConfig};
 use crate::lifecycle_manager::lib::error::{ServelessCoreError, ServelessCoreResult};
-use crate::utils::utils::{create_fn_files_base, envs_to_string};
+use crate::utils::utils::{create_fn_files_base, envs_to_string, generate_hash};
 
 /// Creates a function file structure and extracts its configuration.
 ///
@@ -142,7 +142,8 @@ pub async fn deploy_function(
         ServelessCoreError::BadFunction("Missing environment configuration in function".to_string())
     })?;
     // Build the function Docker image.
-    let function_image_name = format!("{name}-{user_uuid}");
+    let uuid_short = generate_hash(user_uuid);
+    let function_image_name = format!("{name}-{uuid_short}");
     provision_docker(path, &function_image_name, envs).await?;
 
     // Register the function in the database if it's not already registered.

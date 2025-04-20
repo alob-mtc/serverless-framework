@@ -153,24 +153,31 @@ async fn read_field_chunks(
 /// Handles calling a function service based on a provided key.
 ///
 /// This endpoint:
-/// - Checks the function status in the database.
+/// - Checks if the function exists in the user's namespace.
 /// - Starts the function if needed (using a cache connection).
 /// - Forwards the incoming request (including headers and query parameters) to the service.
 ///
-/// Returns the service's response or an error if any step fails.
+/// # Parameters
+///
+/// * `namespace` - The user's UUID serving as a namespace for their functions
+/// * `function_name` - The name of the function to invoke
+///
+/// # Returns
+///
+/// The service's response or an error if any step fails.
 pub(crate) async fn call_function(
     mut state: State<AppState>,
-    Path((name_space, function_name)): Path<(String, String)>,
+    Path((namespace, function_name)): Path<(String, String)>,
     Query(query): Query<HashMap<String, String>>,
     headers: HeaderMap,
     request: Request<Body>,
 ) -> impl IntoResponse {
     // Parse and validate namespace UUID
-    let user_uuid = match name_space.parse() {
+    let user_uuid = match namespace.parse() {
         Ok(uuid) => uuid,
         Err(e) => {
             error!(
-                namespace = %name_space,
+                namespace = %namespace,
                 error = %e,
                 "Invalid function namespace"
             );
@@ -183,7 +190,12 @@ pub(crate) async fn call_function(
     };
 
     if let Err(e) = check_function_status(&state.db_conn, &function_name, user_uuid).await {
-        error!("Function status check failed for {}: {}", function_name, e);
+        error!(
+            namespace = %namespace,
+            function = %function_name,
+            error = %e,
+            "Function status check failed"
+        );
         return e.into_response();
     }
 
@@ -191,7 +203,12 @@ pub(crate) async fn call_function(
     let addr = match start_function(&mut state.cache_conn, &function_name, user_uuid).await {
         Ok(addr) => addr,
         Err(e) => {
-            error!("Error starting function {}: {:?}", function_name, e);
+            error!(
+                namespace = %namespace,
+                function = %function_name,
+                error = ?e,
+                "Error starting function"
+            );
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to start function: {}", e),
@@ -200,7 +217,7 @@ pub(crate) async fn call_function(
         }
     };
 
-    info!("Making request to service: {}", function_name);
+    info!(namespace = %namespace, function = %function_name, "Making request to service");
     // Forward the request to the service and return its response.
     make_request(&addr, &function_name, query, headers, request)
         .await

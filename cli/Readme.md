@@ -55,6 +55,14 @@ Example
 cli deploy-function -n my-function
 ```
 
+#### List functions
+
+Lists all your deployed functions.
+
+```sh
+cli list
+```
+
 ### Authentication
 
 The CLI now supports user authentication for secure function deployment.
@@ -98,6 +106,16 @@ cli logout
 Your authentication token is stored in a file named `.serverless-cli-auth` in your home directory. This file contains your user ID, email, and authentication token.
 
 When you're logged in, the CLI will automatically use your authentication token when deploying functions. If you're not logged in, it will fail.
+
+## Function Namespacing
+
+All functions are automatically namespaced by your user UUID, which means:
+
+- You can have functions with the same name as other users without conflicts
+- Only you can access and invoke your own functions
+- The system enforces isolation between users' functions
+
+Function URLs follow the pattern `/functions/{user-uuid}/invoke/{function-name}`, but the CLI handles this transparently.
 
 ## Security Considerations
 

@@ -11,6 +11,7 @@ This serverless framework is a proof of concept for building, deploying, and man
 - **Serverless Core**: A core runtime that handles function invocation, deployment, and lifecycle management
 - **Command-line Interface (CLI)**: A tool for creating, deploying, and managing serverless functions
 - **Authentication System**: User management for controlled access to serverless resources
+- **Function Namespacing**: Each user's functions are isolated in their own namespace
 
 Unlike cloud provider offerings, this framework runs entirely on your infrastructure, giving you complete control over your environment and functions.
 
@@ -32,6 +33,7 @@ This project is currently in **proof of concept** stage. While it demonstrates t
 - **Lightweight**: Optimized for performance with minimal overhead
 - **Function Hot-reloading**: Quick iteration on your function code
 - **Docker-based Isolation**: Each function runs in its own container for security and dependency isolation
+- **Multi-tenant Support**: Function namespacing ensures separation between users
 
 ## Quick Start
 
@@ -95,6 +97,7 @@ The Serverless Core is the heart of the serverless framework:
 - **Authentication**: Verifies user identity and permissions
 - **Database**: Persists function metadata and user information
 - **Redis Cache**: Tracks running function state and improves performance
+- **Function Namespacing**: Ensures function isolation between users
 
 ### CLI Tool
 
@@ -133,6 +136,21 @@ The framework uses JWT-based authentication:
 2. The Serverless Core validates credentials and issues a JWT token
 3. The CLI stores the token locally for future requests
 4. Functions are deployed and managed with authenticated requests
+
+## Function Namespacing
+
+The framework implements function namespacing to ensure isolation between different users:
+
+1. Each function is associated with a user's UUID in the database
+2. Functions are invoked using the URL pattern: `/functions/{user-uuid}/invoke/{function-name}`
+3. A unique database index prevents name collisions within a user's namespace
+4. The system validates that a user can only access and invoke their own functions
+5. Container names include a hash of the user's UUID for better organization
+
+This ensures that:
+- Users can create functions with the same names without conflicts
+- One user cannot access or modify another user's functions
+- Function isolation is maintained both in the database and at runtime
 
 ## Contributing
 
@@ -175,6 +193,7 @@ We welcome contributions to enhance this proof of concept! Here are some areas w
 - **Cache**: Redis for function state tracking
 - **Authentication**: JWT tokens with secure validation
 - **Function Isolation**: Docker containers with network controls
+- **Multi-tenancy**: Function namespacing with user UUIDs
 
 ## Roadmap to Production Readiness
 
