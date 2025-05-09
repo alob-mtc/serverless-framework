@@ -3057,7 +3057,6 @@ dependencies = [
  "axum",
  "db_entities",
  "db_migrations",
- "dotenvy",
  "futures-util",
  "http 0.2.12",
  "hyper 0.14.32",

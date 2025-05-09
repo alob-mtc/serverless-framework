@@ -7,13 +7,12 @@ use crate::api_controller::middlewares::jwt::AuthenticatedUser;
 use crate::api_controller::AppState;
 use crate::db::function::FunctionDBRepo;
 use crate::db::models::DeployableFunction;
-use crate::lifecycle_manager::lib::deploy::deploy_function;
-use crate::lifecycle_manager::lib::invoke::{check_function_status, start_function};
+use crate::lifecycle_manager::deploy::deploy_function;
+use crate::lifecycle_manager::invoke::{check_function_status, start_function};
 use crate::utils::utils::make_request;
 use futures_util::stream::StreamExt;
 use std::collections::HashMap;
 use tracing::{error, info};
-use uuid::Uuid;
 
 /// Handles uploading a function as a ZIP file with authentication.
 ///
@@ -29,8 +28,8 @@ pub(crate) async fn upload_function(
 ) -> impl IntoResponse {
     // Get configuration from state
     let supported_archive_ext = ".zip"; // Currently we only support ZIP
-    let default_runtime = &state.config.function.default_runtime;
-    let max_size = state.config.function.max_function_size;
+    let default_runtime = &state.config.function_config.default_runtime;
+    let max_size = state.config.function_config.max_function_size;
 
     // Iterate over the fields in the multipart request.
     while let Ok(Some(mut field)) = multipart.next_field().await {
@@ -199,8 +198,21 @@ pub(crate) async fn call_function(
         return e.into_response();
     }
 
+    let docker_compose_network_host = state
+        .config
+        .server_config
+        .docker_compose_network_host
+        .clone();
+
     // Attempt to start the function using the cache connection.
-    let addr = match start_function(&mut state.cache_conn, &function_name, user_uuid).await {
+    let addr = match start_function(
+        &mut state.cache_conn,
+        &function_name,
+        user_uuid,
+        docker_compose_network_host,
+    )
+    .await
+    {
         Ok(addr) => addr,
         Err(e) => {
             error!(

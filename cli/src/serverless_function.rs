@@ -168,6 +168,8 @@ pub fn deploy_function(name: &str) -> Result<(), FunctionError> {
     // Reset the cursor to the beginning of the buffer
     dest_zip.set_position(0);
 
+    println!("Zipped up the folder service... '{}'", name);
+
     // Try authenticated deployment first
     deploy_with_auth(name, dest_zip)?;
 

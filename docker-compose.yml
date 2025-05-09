@@ -1,19 +1,51 @@
-version: '3.8'
-
 services:
+  socat:
+    image: alpine/socat
+    user: root
+    command: tcp-listen:2375,fork,reuseaddr unix-connect:/var/run/docker.sock
+    restart: unless-stopped
+    networks:
+      - infra_network
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+
+  invok_core:
+    container_name: invok-core
+    build:
+      context: .
+      cache_from: []
+    depends_on:
+      - postgres
+      - redis
+      - socat
+    ports:
+      - "3000:3000"
+    networks:
+      - infra_network
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@postgres:5432/serverless"
+      REDIS_URL: "redis://redis:6379"
+      AUTH_JWT_SECRET: "your-secret-key-here"
+      RUST_LOG: "debug"
+      DOCKER_HOST: "socat:2375"
+      # It is important to set this correctly, you can find the correct value by running `docker network ls` and it should be <>_infra_network
+      DOCKER_COMPOSE_NETWORK: "serverless-framework_infra_network"
+
   postgres:
     image: postgres:15
     container_name: postgres
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: serverless
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=serverless
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - backend
+      - infra_network
 
   redis:
     image: redis:7
@@ -21,11 +53,11 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - backend
+      - infra_network
 
 volumes:
   postgres_data:
 
 networks:
-  backend:
+  infra_network:
     driver: bridge

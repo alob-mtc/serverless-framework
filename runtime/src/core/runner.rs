@@ -1,18 +1,28 @@
 use crate::shared::error::{AppResult, RuntimeError};
 use bollard::container::{
-    AttachContainerOptions, AttachContainerResults, Config, RemoveContainerOptions,
+    AttachContainerOptions, AttachContainerResults, Config, CreateContainerOptions,
+    NetworkingConfig, RemoveContainerOptions,
 };
 use bollard::models::{HostConfig, PortBinding, PortMap};
+use bollard::network::ConnectNetworkOptions;
 use bollard::Docker;
 use futures_util::StreamExt;
+use std::collections::HashMap;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use tokio::spawn;
 
-const TIMEOUT_DEFAULT: u64 = 5;
 const BYTES_IN_MB: i64 = 1024 * 1024; // 1 MB in bytes
 const SIZE_256_MB: i64 = 256 * BYTES_IN_MB; // 256 MB in bytes
 const NUM_CPUS: f64 = 1.0;
+#[derive(Debug, Clone)]
+pub struct ContainerDetails {
+    pub container_port: u32,
+    pub bind_port: String,
+    pub container_name: String,
+    pub timeout: u64,
+    pub docker_compose_network_host: String,
+}
 
 /// Spawns a Docker container with given image and ports, attaches to it,
 /// and sets up a timeout/cleanup mechanism.
@@ -20,6 +30,8 @@ const NUM_CPUS: f64 = 1.0;
 /// # Arguments
 ///
 /// * `image_name` - Name of the Docker image to run.
+/// * `container_details` - Details of the Docker container to run.
+///
 /// * `port_binding` - Port mapping string of the form "HOST_PORT:CONTAINER_PORT".
 /// * `timeout` - Optional duration after which to trigger a timeout. Defaults to 5s.
 ///
@@ -27,37 +39,26 @@ const NUM_CPUS: f64 = 1.0;
 ///
 /// * On success, returns the container ID as a `String`.
 /// * On error, returns an `AppError`.
-pub async fn runner(
-    image_name: &str,
-    port_binding: &str,
-    timeout: Option<Duration>,
-) -> AppResult<String> {
+///
+pub async fn runner(image_name: &str, container_details: ContainerDetails) -> AppResult<()> {
     // Connect to Docker via Unix socket (or named pipe on Windows).
-    let docker = Docker::connect_with_socket_defaults()
+    let docker = Docker::connect_with_http_defaults()
         .map_err(|e| RuntimeError::System(format!("Failed to connect to Docker: {e}")))?;
 
     let start_time = Instant::now();
 
-    // Safely parse the port mapping: "HOST_PORT:CONTAINER_PORT".
-    let ports: Vec<&str> = port_binding.split(':').collect();
-    if ports.len() != 2 {
-        return Err(RuntimeError::System(
-            "Invalid port binding format; expected 'HOST_PORT:CONTAINER_PORT'.".to_string(),
-        ));
-    }
-
-    let host_port = ports[0];
-    let container_port = ports[1];
-
     // Set up port bindings.
     let mut port_map = PortMap::new();
     port_map.insert(
-        format!("{container_port}/tcp"),
+        format!("{}/tcp", container_details.container_port),
         Some(vec![PortBinding {
-            host_ip: Some("127.0.0.1".to_string()),
-            host_port: Some(host_port.to_string()),
+            host_ip: Some("".to_string()),
+            host_port: Some(container_details.bind_port),
         }]),
     );
+
+    let mut exposed_ports = HashMap::new();
+    exposed_ports.insert("8080/tcp", HashMap::new());
 
     let (cpu_period, cpu_quota) = cpu_limits(NUM_CPUS);
     // Configure the container.
@@ -66,6 +67,7 @@ pub async fn runner(
         tty: Some(true),
         attach_stdout: Some(true),
         attach_stderr: Some(true),
+        exposed_ports: Some(exposed_ports),
         host_config: Some(HostConfig {
             memory: Some(SIZE_256_MB),
             cpu_period: Some(cpu_period),
@@ -79,10 +81,34 @@ pub async fn runner(
 
     // Create the container.
     let create_response = docker
-        .create_container::<&str, &str>(None, container_config)
+        .create_container::<&str, &str>(
+            Some(CreateContainerOptions {
+                name: &container_details.container_name,
+                platform: None,
+            }),
+            container_config,
+        )
         .await
         .map_err(|e| RuntimeError::System(format!("Failed to create container: {e}")))?;
     let container_id = create_response.id.clone();
+
+    // connect it to the network (inner compose network)
+    let network_options = ConnectNetworkOptions {
+        container: container_id.clone(),
+        ..Default::default()
+    };
+
+    docker
+        .connect_network(
+            &container_details.docker_compose_network_host,
+            network_options,
+        )
+        .await
+        .map_err(|e| {
+            RuntimeError::System(format!(
+                "Failed to connect the container to the docker compose network: {e}"
+            ))
+        })?;
 
     // Start the container.
     docker
@@ -117,7 +143,7 @@ pub async fn runner(
     let docker_clone = docker.clone();
     let container_id_clone = container_id.clone();
     spawn(async move {
-        let timeout_val = timeout.unwrap_or_else(|| Duration::from_secs(TIMEOUT_DEFAULT));
+        let timeout_val = Duration::from_secs(container_details.timeout);
 
         // Create a channel-based timeout; trigger_timeout() starts the countdown.
         let (rx, trigger_timeout) = crate::shared::utils::timeout(timeout_val);
@@ -135,7 +161,7 @@ pub async fn runner(
         }
     });
 
-    Ok(container_id)
+    Ok(())
 }
 
 /// Monitors the container process using a timeout channel.
@@ -230,6 +256,16 @@ mod tests {
 #[tokio::test]
 async fn test_runner() {
     // Make sure the "hello-world" image is available locally or can be pulled.
-    let result = runner("test-runner", "8080:8080", None).await;
+    let result = runner(
+        "test-runner",
+        ContainerDetails {
+            container_port: 8080,
+            bind_port: 8080.to_string(),
+            container_name: "c-test".to_string(),
+            timeout: 50,
+            docker_compose_network_host: "asdf".to_string(),
+        },
+    )
+    .await;
     assert!(result.is_ok(), "Container should start successfully.");
 }

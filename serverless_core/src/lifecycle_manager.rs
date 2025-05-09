@@ -1,1 +1,3 @@
-pub(crate) mod lib;
+pub(crate) mod deploy;
+mod error;
+pub(crate) mod invoke;

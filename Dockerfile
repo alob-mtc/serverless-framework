@@ -21,18 +21,21 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
+    docker.io \
  && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user 'appuser' and add them to the 'daemon' group.
 # The 'daemon' group typically has GID 1 on many systems.
 RUN useradd -m -G daemon appuser
 
+# add to user
+RUN groupadd -f docker && usermod -aG docker appuser
+
 # Set working directory
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /usr/src/app/target/release/serverless-core /usr/local/bin
-COPY --from=builder /usr/src/app/.env ./
 
 # Ensure the binary is executable
 RUN chmod +x /usr/local/bin/serverless-core
@@ -42,14 +45,6 @@ USER appuser
 
 # Expose the port your API listens on (adjust if necessary)
 EXPOSE 3000
-
-# ---
-# IMPORTANT:
-# To allow your containerized API to interact with the Docker daemon,
-# mount the host's Docker socket when running the container:
-#
-#   docker run -v /var/run/docker.sock:/var/run/docker.sock -p 3000:3000 your-image-name
-# ---
 
 # Start the API application
 CMD ["serverless-core"]

@@ -49,6 +49,7 @@ This allows you to create, deploy, and test serverless functions directly in you
 ### Prerequisites
 
 For local development and deployment:
+
 - Docker and Docker Compose
 - Rust toolchain (for building the CLI)
 
@@ -74,26 +75,26 @@ cd cli
 cargo build --release
 
 # Optional: Move the binary to your PATH
-cp target/release/serverless-cli /usr/local/bin
+cp target/release/invok /usr/local/bin
 ```
 
 ### Creating and Deploying Your First Function
 
 ```sh
 # Register a user account
-serverless-cli register --email user@example.com --password your_password
+invok register --email user@example.com --password your_password
 
 # Login
-serverless-cli login --email user@example.com --password your_password
+invok login --email user@example.com --password your_password
 
 # Create a new function (defaults to Go runtime)
-serverless-cli create-function -n hello-world
+invok create -n hello-world
 
 # Deploy your function
-serverless-cli deploy-function -n hello-world
+invok deploy -n hello-world
 
 # List your deployed functions
-serverless-cli list
+invok list
 ```
 
 ## Key Components
@@ -152,12 +153,13 @@ The framework uses JWT-based authentication:
 The framework implements function namespacing to ensure isolation between different users:
 
 1. Each function is associated with a user's UUID in the database
-2. Functions are invoked using the URL pattern: `/functions/{user-uuid}/invoke/{function-name}`
+2. Functions are invoked using the URL pattern: `/invok/{user-uuid}/{function-name}`
 3. A unique database index prevents name collisions within a user's namespace
 4. The system validates that a user can only access and invoke their own functions
 5. Container names include a hash of the user's UUID for better organization
 
 This ensures that:
+
 - Users can create functions with the same names without conflicts
 - One user cannot access or modify another user's functions
 - Function isolation is maintained both in the database and at runtime
@@ -236,6 +238,7 @@ Try out the serverless framework without installing anything using our web-based
 [Invok Playground](https://freeserverless.com/functions/29e2d84f-7a0e-42dd-8b70-a7d7c7c04199/invoke/invok-ide)
 
 The playground allows you to:
+
 - Create serverless functions directly in your browser
 - Deploy functions instantly
 - Test your functions with real-time execution
@@ -243,4 +246,4 @@ The playground allows you to:
 
 Feel free to play around with the host here:
 [serverless-framework-host](https://freeserverless.com)
-deploy/host your own function and see it for yourself (try not to break the host-machine 😂 *it's a small size server for demo only*)
+deploy/host your own function and see it for yourself (try not to break the host-machine 😂 _it's a small size server for demo only_)
