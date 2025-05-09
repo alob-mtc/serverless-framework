@@ -60,7 +60,7 @@ pub async fn provisioning(
     runner_type: &str,
     dockerfile_content: &str,
 ) -> AppResult<()> {
-    let docker = Docker::connect_with_socket_defaults()
+    let docker = Docker::connect_with_http_defaults()
         .map_err(|e| RuntimeError::System(format!("Unable to connect to Docker: {e}")))?;
 
     // Create the build context as a tar archive (in memory).

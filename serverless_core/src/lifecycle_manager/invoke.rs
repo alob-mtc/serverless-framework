@@ -1,15 +1,13 @@
 use crate::db::cache::FunctionCacheRepo;
 use crate::db::function::FunctionDBRepo;
-use crate::lifecycle_manager::lib::error::{ServelessCoreError, ServelessCoreResult};
-use crate::utils::utils::{generate_hash, random_port};
-use md5;
+use crate::lifecycle_manager::error::{ServelessCoreError, ServelessCoreResult};
+use crate::utils::utils::{generate_hash, random_container_name, random_port};
 use redis::aio::MultiplexedConnection;
-use runtime::core::runner::runner;
+use runtime::core::runner::{runner, ContainerDetails};
 use sea_orm::DatabaseConnection;
-use std::time::Duration;
 use tracing::{error, info};
 use uuid::Uuid;
-
+const TIMEOUT_DEFAULT_IN_SECONDS: u64 = 50;
 /// Checks if a function is registered in the database.
 ///
 /// Returns `Ok(())` if the function exists; otherwise, returns an error
@@ -57,12 +55,22 @@ pub async fn start_function(
     cache_conn: &mut MultiplexedConnection,
     name: &str,
     user_uuid: Uuid,
+    docker_compose_network_host: String,
 ) -> ServelessCoreResult<String> {
     // Generate a shorter hash of the UUID for better container names
     let uuid_short = generate_hash(user_uuid);
 
     // Create a unique function name based on function name and user's UUID hash
     let function_key = format!("{name}-{uuid_short}");
+
+    // Generate a random port and prepare the service address.
+    let container_details = ContainerDetails {
+        container_port: 8080,
+        bind_port: random_port(),
+        container_name: random_container_name(),
+        timeout: TIMEOUT_DEFAULT_IN_SECONDS,
+        docker_compose_network_host,
+    };
 
     // Check if the function is already running.
     if let Some(addr) = FunctionCacheRepo::get_function(cache_conn, &function_key).await {
@@ -73,35 +81,32 @@ pub async fn start_function(
         return Ok(addr);
     }
 
-    // Generate a random port and prepare the service address.
-    let port = random_port();
-    let addr = format!("localhost:{}", port);
-    let timeout = 10;
-
     // Attempt to run the function container with a timeout slightly longer than the cache TTL.
-    match runner(
-        &function_key,
-        &format!("{port}:8080"),
-        Some(Duration::from_secs(timeout + 2)),
-    )
-    .await
-    {
-        Err(e) => {
+    runner(&function_key, container_details.clone())
+        .await
+        .map_err(|e| {
             error!(
                 "Error starting function '{}' for user '{}': {:?}",
                 name, user_uuid, e
             );
-            Err(ServelessCoreError::FunctionFailedToStart(name.to_string()))
-        }
-        Ok(_) => {
-            // Register the function in the cache.
-            let _ =
-                FunctionCacheRepo::add_function(cache_conn, &function_key, &addr, timeout).await;
-            info!(
-                "Function '{}' for user '{}' started at: {}",
-                name, user_uuid, addr
-            );
-            Ok(addr)
-        }
-    }
+            ServelessCoreError::FunctionFailedToStart(name.to_string())
+        })?;
+
+    // Register the function in the cache.
+    let function_address = format!(
+        "{}:{}",
+        &container_details.container_name, &container_details.container_port
+    );
+    let _ = FunctionCacheRepo::add_function(
+        cache_conn,
+        &function_key,
+        &function_address,
+        container_details.timeout,
+    )
+    .await;
+    info!(
+        "Function '{}' for user '{}' started at: {}",
+        name, user_uuid, function_address
+    );
+    Ok(function_address)
 }

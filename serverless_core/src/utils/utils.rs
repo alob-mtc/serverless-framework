@@ -5,6 +5,8 @@ use axum::http::{
 };
 use axum::response::IntoResponse;
 use hyper::body::to_bytes;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use reqwest::header::HeaderMap as ReqwestHeaderMap;
 use reqwest::Client;
 use reqwest::StatusCode as ReqwestStatusCode;
@@ -84,6 +86,22 @@ fn convert_req_header_to_axum_headers(
         debug!("Converting header - {}: {:?}", hn, hv.to_str());
         res_headers.append(hn, hv.clone());
     }
+}
+
+/// Generates a random container name suitable for Docker
+///
+/// Returns a lowercase alphanumeric string prefixed with 'c-' to ensure it starts with a letter
+pub fn random_container_name() -> String {
+    // Generate a random 10-character string
+    let random_string: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(10)
+        .map(char::from)
+        .collect::<String>()
+        .to_lowercase();
+
+    // Prefix with 'c-' to ensure it starts with a letter (Docker requirement)
+    format!("c-{}", random_string)
 }
 
 /// Generates a random port number (as a string) in the range 8000-8999.

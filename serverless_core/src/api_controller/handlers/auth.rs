@@ -12,8 +12,6 @@ use uuid::Uuid;
 use crate::api_controller::AppState;
 use crate::db::auth::AuthDBRepo;
 
-// JWT secret key - in production, this should be loaded from an environment variable
-const JWT_SECRET: &[u8] = b"your-secret-key-here";
 // JWT token validity period in seconds (24 hours)
 const TOKEN_VALIDITY: u64 = 24 * 60 * 60;
 
@@ -86,7 +84,10 @@ pub async fn register(
             info!("User registered: {}", user.email);
 
             // Generate a token for the user
-            match generate_token(&user.uuid.to_string()) {
+            match generate_token(
+                &user.uuid.to_string(),
+                &state.config.server_config.jwt_auth_secret,
+            ) {
                 Ok(token) => {
                     let user_response = UserResponse {
                         uuid: user.uuid.to_string(),
@@ -145,7 +146,10 @@ pub async fn login(
             info!("User logged in: {}", user.email);
 
             // Generate a token for the user
-            match generate_token(&user.uuid.to_string()) {
+            match generate_token(
+                &user.uuid.to_string(),
+                &state.config.server_config.jwt_auth_secret,
+            ) {
                 Ok(token) => {
                     let user_response = UserResponse {
                         uuid: user.uuid.to_string(),
@@ -195,11 +199,14 @@ pub async fn login(
 }
 
 /// Validates a JWT token
-pub fn validate_token(token: &str) -> Result<Uuid, jsonwebtoken::errors::Error> {
+pub fn validate_token(
+    token: &str,
+    auth_jwt_secret: &str,
+) -> Result<Uuid, jsonwebtoken::errors::Error> {
     // Decode and validate the token
     let token_data = decode::<Claims>(
         token,
-        &DecodingKey::from_secret(JWT_SECRET),
+        &DecodingKey::from_secret(auth_jwt_secret.as_bytes()),
         &Validation::default(),
     )?;
 
@@ -211,7 +218,10 @@ pub fn validate_token(token: &str) -> Result<Uuid, jsonwebtoken::errors::Error> 
 }
 
 /// Generates a JWT token for a user
-fn generate_token(user_uuid: &str) -> Result<String, jsonwebtoken::errors::Error> {
+fn generate_token(
+    user_uuid: &str,
+    auth_jwt_secret: &str,
+) -> Result<String, jsonwebtoken::errors::Error> {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -226,6 +236,6 @@ fn generate_token(user_uuid: &str) -> Result<String, jsonwebtoken::errors::Error
     encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(JWT_SECRET),
+        &EncodingKey::from_secret(auth_jwt_secret.as_bytes()),
     )
 }

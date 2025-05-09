@@ -57,21 +57,22 @@ where
                 "Invalid authorization header format".to_string(),
             ));
         }
+        let app_state = AppState::from_ref(state);
 
         // Extract the token
         let token = &auth_header[7..];
 
         // Validate the token
-        let user_uuid = validate_token(token).map_err(|e| {
-            error!("Token validation error: {}", e);
-            AuthError(
-                StatusCode::UNAUTHORIZED,
-                "Invalid or expired token".to_string(),
-            )
-        })?;
+        let user_uuid = validate_token(token, &app_state.config.server_config.jwt_auth_secret)
+            .map_err(|e| {
+                error!("Token validation error: {}", e);
+                AuthError(
+                    StatusCode::UNAUTHORIZED,
+                    "Invalid or expired token".to_string(),
+                )
+            })?;
 
         // Get the app state
-        let app_state = AppState::from_ref(state);
 
         // Verify the user exists in the database
         match AuthDBRepo::find_by_uuid(&app_state.db_conn, user_uuid).await {
