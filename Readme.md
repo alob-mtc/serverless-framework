@@ -153,7 +153,7 @@ The framework uses JWT-based authentication:
 The framework implements function namespacing to ensure isolation between different users:
 
 1. Each function is associated with a user's UUID in the database
-2. Functions are invoked using the URL pattern: `/functions/{user-uuid}/invoke/{function-name}`
+2. Functions are invoked using the URL pattern: `/invok/{user-uuid}/{function-name}`
 3. A unique database index prevents name collisions within a user's namespace
 4. The system validates that a user can only access and invoke their own functions
 5. Container names include a hash of the user's UUID for better organization

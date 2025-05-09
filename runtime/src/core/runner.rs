@@ -30,7 +30,7 @@ pub struct ContainerDetails {
 /// # Arguments
 ///
 /// * `image_name` - Name of the Docker image to run.
-/// * `container_name` - Name of the Docker container to run.
+/// * `container_details` - Details of the Docker container to run.
 ///
 /// * `port_binding` - Port mapping string of the form "HOST_PORT:CONTAINER_PORT".
 /// * `timeout` - Optional duration after which to trigger a timeout. Defaults to 5s.
