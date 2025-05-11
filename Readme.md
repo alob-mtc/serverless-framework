@@ -230,7 +230,7 @@ This project is licensed under the [LICENSE](LICENSE) file in the repository.
 
 [Watch Quick Demo](https://youtu.be/qLKV_cO_XhQ?si=4lmvu8frlzH1yLNX)
 
-A demo function running on a self-hosted enviroment here [invoke-demo-home-page](https://freeserverless.com/functions/29e2d84f-7a0e-42dd-8b70-a7d7c7c04199/invoke/home-page), function code [here](https://github.com/alob-mtc/invok-functions)
+A demo function running on a self-hosted enviroment here [invoke-demo-home-page](https://freeserverless.com/invok/9447cdf0-d29a-4b0f-a6dc-4455b8291a6a/home-page), function code [here](https://github.com/alob-mtc/invok-functions)
 
 ### Interactive Playground
 
